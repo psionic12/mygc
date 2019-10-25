@@ -1,0 +1,1 @@
+add_library(mygc Heap.cpp GarbageCollector.cpp)
