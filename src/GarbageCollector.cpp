@@ -4,10 +4,10 @@
 
 #include "../includes/GarbageCollector.h"
 void *mygc::GarbageCollector::New(size_t size) {
-  auto *ref = mChunk.allocate(size);
+  auto *ref = mHeap.allocate(size);
   if (ref == nullptr) {
     collect();
-    ref = mChunk.allocate(size);
+    ref = mHeap.allocate(size);
     if (ref == nullptr) {
       throw std::runtime_error("out of memory");
     }

@@ -16,10 +16,10 @@ namespace mygc {
 
 class GarbageCollector {
  public:
-  GarbageCollector() : mChunk(MYGC_HEAP_SIZE) {}
+  GarbageCollector() : mHeap(MYGC_HEAP_SIZE) {}
   void *New(size_t size);
  private:
-  Heap mChunk;
+  Heap mHeap;
   std::mutex mCollectMutex;
   void collect();
   void markFromRoots();
