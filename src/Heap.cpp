@@ -4,8 +4,7 @@
 
 #include "Heap.h"
 using namespace mygc;
-void *Heap::allocate(size_t size) {
-  std::lock_guard<std::mutex> guard(mMutex);
+void *Heap::allocateLocked(size_t size) {
   if (mTail + size > mEnd) {
     return nullptr;
   } else {
@@ -14,7 +13,13 @@ void *Heap::allocate(size_t size) {
     return ptr;
   }
 }
-void Heap::clear() {
-  std::lock_guard<std::mutex> guard(mMutex);
+void Heap::clearLocked() {
   mTail = mStart;
+}
+Heap::Heap(size_t size) : mSize(size), mStart(new char[size]), mTail(mStart), mEnd(mStart + size) {}
+Heap::~Heap() {
+  delete[] mStart;
+}
+bool Heap::inHeapLocked(void *ptr) {
+  return ptr >= mStart && ptr < mEnd;
 }

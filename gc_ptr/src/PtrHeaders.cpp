@@ -9,9 +9,10 @@
 
 auto gUuid = boost::uuids::random_generator()();
 
-mygc::PtrHeaders::PtrHeaders() : mPtr(nullptr) {
+mygc::CheckHeader::CheckHeader() {
   std::copy(gUuid.data, gUuid.data + gUuid.size(), mUuid);
 }
-bool mygc::PtrHeaders::check() {
+bool mygc::CheckHeader::check() {
   return !memcmp(mUuid, gUuid.data, gUuid.size());
 }
+std::unordered_map<std::type_index, std::unique_ptr<IDescriptor>> mygc::GcPtrHeader::sDescriptorMap;

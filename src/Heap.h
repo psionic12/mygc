@@ -6,23 +6,20 @@
 #define MYGC_CHUNK_H
 
 #include <cstddef>
-#include <mutex>
 namespace mygc {
 
 class Heap {
  public:
-  Heap(size_t size) : mSize(size), mStart(new char[size]), mTail(mStart), mEnd(mStart + size) {}
-  virtual ~Heap() {
-    delete[] mStart;
-  }
-  void *allocate(size_t size);
-  void clear();
+  Heap(size_t size);
+  virtual ~Heap();
+  void *allocateLocked(size_t size);
+  void clearLocked();
+  bool inHeapLocked(void *ptr);
  private:
   size_t mSize;
   char *mStart;
   char *mTail;
   char *mEnd;
-  std::mutex mMutex;
 };
 }//namespace mygc
 

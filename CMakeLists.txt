@@ -9,4 +9,4 @@ add_subdirectory(src)
 
 add_subdirectory(test)
 
-add_subdirectory(cpp_wrapper)
+add_subdirectory(gc_ptr)
