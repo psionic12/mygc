@@ -3,7 +3,7 @@
 
 class HeapTest : public testing::Test {};
 
-TEST_F(ChunkTest, chunkTest) {
+TEST_F(HeapTest, heapTest) {
   mygc::Heap chunk(16);
   auto *ptr = chunk.allocateLocked(8);
   ASSERT_NE(ptr, nullptr);

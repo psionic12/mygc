@@ -3,16 +3,28 @@
 //
 
 #include <signal.h>
+#include <glog/logging.h>
 #include <GarbageCollector.h>
 
 #include "GarbageCollector.h"
+#include "stop_the_world.h"
 
 #define MYGC_HEAP_SIZE (1 << 22)
-#define STOP_SIGNAL SIGRTMIN + ('m' + 'y' + 'g' + 'c') % (SIGRTMAX - SIGRTMIN)
+
+#ifndef MYGC_STOP_SIGNAL
+#define MYGC_STOP_SIGNAL SIGRTMIN + ('m' + 'y' + 'g' + 'c') % (SIGRTMAX - SIGRTMIN)
+#endif
 
 mygc::GarbageCollector mygc::GarbageCollector::sGarbageCollector;
-std::mutex  mygc::GarbageCollector::mThreadBlocker;
-std::condition_variable mygc::GarbageCollector::mBlockerCondition;
+std::set<pthread_t> mygc::GarbageCollector::sAttachedThreads;
+
+mygc::GarbageCollector::GarbageCollector()
+    : mHeap(MYGC_HEAP_SIZE) {
+  stop_the_world_init();
+  // initial glog
+  google::InitGoogleLogging(nullptr);
+  FLAGS_logtostderr = 1;
+}
 
 void *mygc::GarbageCollector::New(size_t size) {
   std::lock_guard<std::mutex> guard(mGcMutex);
@@ -28,11 +40,6 @@ void *mygc::GarbageCollector::New(size_t size) {
 }
 void mygc::GarbageCollector::collectLocked() {
 }
-mygc::GarbageCollector::GarbageCollector()
-    : mHeap(MYGC_HEAP_SIZE) {
-  //TODO use sigact()
-  signal(STOP_SIGNAL, GarbageCollector::stopHandler);
-}
 bool mygc::GarbageCollector::inHeap(void *ptr) {
   std::lock_guard<std::mutex> guard(mGcMutex);
   return mHeap.inHeapLocked(ptr);
@@ -45,27 +52,18 @@ void mygc::GarbageCollector::removeRoots(void *ptr) {
   std::lock_guard<std::mutex> guard(mGcMutex);
   mGcRoots.erase(ptr);
 }
-void mygc::GarbageCollector::stopTheWorldLocked() {
-  auto self = pthread_self();
-  for (auto thread : mAttachedThreads) {
-    if (thread != self) {
-      pthread_kill(thread, STOP_SIGNAL);
-    }
-  }
-}
-void mygc::GarbageCollector::restartTheWorldLocked() {
-  mBlockerCondition.notify_all();
-}
 void mygc::GarbageCollector::attachThead(pthread_t thread) {
-  mAttachedThreads.emplace(thread);
+  sAttachedThreads.emplace(thread);
 }
 void mygc::GarbageCollector::detachThead(pthread_t thread) {
-  mAttachedThreads.erase(thread);
-}
-void mygc::GarbageCollector::stopHandler(int signal) {
-  std::unique_lock<std::mutex> lk(mThreadBlocker);
-  mBlockerCondition.wait(lk);
+  sAttachedThreads.erase(thread);
 }
 mygc::GarbageCollector &mygc::GarbageCollector::getCollector() {
   return sGarbageCollector;
+}
+void mygc::GarbageCollector::stopTheWorldLocked() {
+  stop_the_world(sAttachedThreads);
+}
+void mygc::GarbageCollector::restartTheWorldLocked() {
+  restart_the_world();
 }

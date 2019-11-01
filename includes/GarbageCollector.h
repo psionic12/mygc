@@ -27,14 +27,11 @@ class GarbageCollector {
   void collectLocked();
   void stopTheWorldLocked();
   void restartTheWorldLocked();
-  static void stopHandler(int signal);
   static GarbageCollector sGarbageCollector;
   Heap mHeap;
   std::mutex mGcMutex;
   std::set<void *> mGcRoots;
-  std::set<pthread_t> mAttachedThreads;
-  static std::mutex mThreadBlocker;
-  static std::condition_variable mBlockerCondition;
+  static std::set<pthread_t> sAttachedThreads;;
 };
 
 } //namespace mygc
