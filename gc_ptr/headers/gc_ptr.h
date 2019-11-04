@@ -9,6 +9,7 @@
 #include <typeinfo>
 #include <typeindex>
 #include <memory>
+#include <glog/logging.h>
 
 #include "GarbageCollector.h"
 #include "CppDescriptor.h"
@@ -27,8 +28,23 @@ class CheckHeader {
 
 class GcPtrHeader : public CheckHeader, public GcReference {
  public:
-  GcPtrHeader(size_t size) : GcReference(size) {}
+  GcPtrHeader(size_t size) : GcReference(size) {
+    tThreadHandler; // used static thread_local member will not initiate(both on gcc and clang), so make it "used"
+  }
+ protected:
   static std::unordered_map<std::type_index, std::unique_ptr<IDescriptor>> sDescriptorMap;
+  class ThreadHandler {
+   public:
+    ThreadHandler() {
+      GarbageCollector::getCollector().attachThead(pthread_self());
+      LOG(INFO) << "new thread " << pthread_self() << " created";
+    }
+    ~ThreadHandler() {
+      GarbageCollector::getCollector().detachThead(pthread_self());
+      LOG(INFO) << "thread " << pthread_self() << " destroyed";
+    }
+  };
+  static thread_local ThreadHandler tThreadHandler;
 };
 
 template<typename T, typename... Args>

@@ -16,3 +16,5 @@ bool mygc::CheckHeader::check() {
   return !memcmp(mUuid, gUuid.data, gUuid.size());
 }
 std::unordered_map<std::type_index, std::unique_ptr<IDescriptor>> mygc::GcPtrHeader::sDescriptorMap;
+
+thread_local mygc::GcPtrHeader::ThreadHandler mygc::GcPtrHeader::tThreadHandler;

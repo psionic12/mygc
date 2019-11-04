@@ -15,15 +15,14 @@
 #define MYGC_STOP_SIGNAL SIGRTMIN + ('m' + 'y' + 'g' + 'c') % (SIGRTMAX - SIGRTMIN)
 #endif
 
-mygc::GarbageCollector mygc::GarbageCollector::sGarbageCollector;
 std::set<pthread_t> mygc::GarbageCollector::sAttachedThreads;
 
 mygc::GarbageCollector::GarbageCollector()
     : mHeap(MYGC_HEAP_SIZE) {
   stop_the_world_init();
   // initial glog
-  google::InitGoogleLogging(nullptr);
-  FLAGS_logtostderr = 1;
+//  google::InitGoogleLogging(nullptr);
+  FLAGS_logtostderr = true;
 }
 
 void *mygc::GarbageCollector::New(size_t size) {
@@ -53,17 +52,24 @@ void mygc::GarbageCollector::removeRoots(void *ptr) {
   mGcRoots.erase(ptr);
 }
 void mygc::GarbageCollector::attachThead(pthread_t thread) {
+  std::lock_guard<std::mutex> guard(mGcMutex);
   sAttachedThreads.emplace(thread);
 }
 void mygc::GarbageCollector::detachThead(pthread_t thread) {
+  std::lock_guard<std::mutex> guard(mGcMutex);
   sAttachedThreads.erase(thread);
 }
 mygc::GarbageCollector &mygc::GarbageCollector::getCollector() {
-  return sGarbageCollector;
+  static GarbageCollector garbageCollector;
+  return garbageCollector;
 }
 void mygc::GarbageCollector::stopTheWorldLocked() {
   stop_the_world(sAttachedThreads);
 }
 void mygc::GarbageCollector::restartTheWorldLocked() {
   restart_the_world();
+}
+std::set<pthread_t> mygc::GarbageCollector::getAttachedThreads() {
+  std::lock_guard<std::mutex> guard(mGcMutex);
+  return sAttachedThreads;
 }

@@ -22,16 +22,16 @@ class GarbageCollector {
   void attachThead(pthread_t thread);
   void detachThead(pthread_t thread);
   static GarbageCollector &getCollector();
+  std::set<pthread_t> getAttachedThreads();
  private:
   GarbageCollector();
   void collectLocked();
   void stopTheWorldLocked();
   void restartTheWorldLocked();
-  static GarbageCollector sGarbageCollector;
   Heap mHeap;
   std::mutex mGcMutex;
   std::set<void *> mGcRoots;
-  static std::set<pthread_t> sAttachedThreads;;
+  static std::set<pthread_t> sAttachedThreads;
 };
 
 } //namespace mygc
