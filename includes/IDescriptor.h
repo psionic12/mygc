@@ -7,7 +7,7 @@
 #include <vector>
 class IDescriptor {
  public:
-  virtual const std::vector<size_t> &getIndices() = 0;
+  virtual std::pair<const size_t, const std::vector<size_t> &> getIndices() = 0;
   virtual void destructor(void *object) = 0;
 };
 #endif //MYGC_IDESCRIPTOR_H
