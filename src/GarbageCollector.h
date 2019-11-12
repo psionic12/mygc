@@ -9,18 +9,20 @@
 #include <set>
 #include <condition_variable>
 
-#include "../src/Heap.h"
+#include "Heap.h"
+#include "YoungGeneration.h"
 
 namespace mygc {
-
+class GcReference;
+class ObjectRecord;
 class GarbageCollector {
  public:
-  void *New(size_t size);
+  ObjectRecord * New(size_t size);
   bool inHeap(void *ptr);
-  void addRoots(void *ptr);
-  void removeRoots(void *ptr);
-  void attachThead(pthread_t thread);
-  void detachThead(pthread_t thread);
+  void addRoots(GcReference *ptr);
+  void removeRoots(GcReference *ptr);
+  void attachThread(pthread_t thread);
+  void detachThread(pthread_t thread);
   static GarbageCollector &getCollector();
   std::set<pthread_t> getAttachedThreads();
  private:
@@ -28,9 +30,8 @@ class GarbageCollector {
   void collectLocked();
   void stopTheWorldLocked();
   void restartTheWorldLocked();
-  Heap mHeap;
   std::mutex mGcMutex;
-  std::set<void *> mGcRoots;
+  std::set<GcReference *> mGcRoots;
   static std::set<pthread_t> sAttachedThreads;
 };
 

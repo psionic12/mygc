@@ -11,7 +11,7 @@
 #include <memory>
 #include <glog/logging.h>
 
-#include "GarbageCollector.h"
+#include "../../src/GarbageCollector.h"
 #include "CppDescriptor.h"
 #include "GcReference.h"
 
@@ -46,11 +46,11 @@ class GcPtrHeader : public CheckHeader, public GcReference {
   class ThreadHandler {
    public:
     ThreadHandler() {
-      GarbageCollector::getCollector().attachThead(pthread_self());
+      GarbageCollector::getCollector().attachThread(pthread_self());
       LOG(INFO) << "new thread " << pthread_self() << " created";
     }
     ~ThreadHandler() {
-      GarbageCollector::getCollector().detachThead(pthread_self());
+      GarbageCollector::getCollector().detachThread(pthread_self());
       LOG(INFO) << "thread " << pthread_self() << " destroyed";
     }
   };

@@ -4,4 +4,3 @@
 
 #include "GcReference.h"
 
-mygc::GarbageCollector mygc::GcReference::sGarbageCollector;

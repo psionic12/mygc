@@ -11,8 +11,8 @@ namespace mygc {
 class Heap {
  public:
   Heap(size_t size);
-  virtual ~Heap();
-  virtual void *allocateLocked(size_t size);
+  ~Heap();
+  void *allocateLocked(size_t size);
   void clearLocked();
   bool inHeapLocked(void *ptr);
  private:

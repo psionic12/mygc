@@ -4,7 +4,7 @@
 
 #include <signal.h>
 #include <glog/logging.h>
-#include <GarbageCollector.h>
+#include "GarbageCollector.h"
 
 #include "GarbageCollector.h"
 #include "stop_the_world.h"
@@ -25,17 +25,9 @@ mygc::GarbageCollector::GarbageCollector()
   FLAGS_logtostderr = true;
 }
 
-void *mygc::GarbageCollector::New(size_t size) {
+mygc::ObjectRecord * mygc::GarbageCollector::New(size_t size) {
   std::lock_guard<std::mutex> guard(mGcMutex);
-  auto *ref = mHeap.allocateLocked(size);
-  if (ref == nullptr) {
-    collectLocked();
-    ref = mHeap.allocateLocked(size);
-    if (ref == nullptr) {
-      throw std::runtime_error("out of memory");
-    }
-  }
-  return ref;
+  return nullptr;
 }
 void mygc::GarbageCollector::collectLocked() {
 }
@@ -43,19 +35,19 @@ bool mygc::GarbageCollector::inHeap(void *ptr) {
   std::lock_guard<std::mutex> guard(mGcMutex);
   return mHeap.inHeapLocked(ptr);
 }
-void mygc::GarbageCollector::addRoots(void *ptr) {
+void mygc::GarbageCollector::addRoots(GcReference *ptr) {
   std::lock_guard<std::mutex> guard(mGcMutex);
   mGcRoots.insert(ptr);
 }
-void mygc::GarbageCollector::removeRoots(void *ptr) {
+void mygc::GarbageCollector::removeRoots(GcReference *ptr) {
   std::lock_guard<std::mutex> guard(mGcMutex);
   mGcRoots.erase(ptr);
 }
-void mygc::GarbageCollector::attachThead(pthread_t thread) {
+void mygc::GarbageCollector::attachThread(pthread_t thread) {
   std::lock_guard<std::mutex> guard(mGcMutex);
   sAttachedThreads.emplace(thread);
 }
-void mygc::GarbageCollector::detachThead(pthread_t thread) {
+void mygc::GarbageCollector::detachThread(pthread_t thread) {
   std::lock_guard<std::mutex> guard(mGcMutex);
   sAttachedThreads.erase(thread);
 }

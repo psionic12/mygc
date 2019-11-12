@@ -1,6 +1,6 @@
 find_package(GLOG REQUIRED)
 
-add_library(mygc Heap.cpp GarbageCollector.cpp stop_the_world.cpp)
+add_library(mygc Heap.cpp GarbageCollector.cpp stop_the_world.cpp YoungGeneration.cpp OldGeneration.cpp GcReference.cpp)
 target_include_directories(mygc PUBLIC ../includes)
 
 target_link_libraries(mygc glog::glog)
