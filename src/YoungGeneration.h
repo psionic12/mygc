@@ -8,6 +8,7 @@
 #include <set>
 #include "Heap.h"
 #include "IDescriptor.h"
+#include "NonTrivialList.h"
 namespace mygc {
 
 class ObjectRecord;
@@ -17,17 +18,14 @@ class GcReference;
 class YoungGeneration {
  public:
   YoungGeneration(OldGeneration &oldGeneration, std::set<GcReference *> &gcRoot);
-  ~YoungGeneration();
   void *allocateLocked(size_t size, IDescriptor *descriptor, bool nonTrivial);
-  void collectLocked();
+  void collectStopped();
  private:
-  // link list header/tail for objects which has a non-trivial destructer
-  ObjectRecord *mNonTrivialHeader;
-  ObjectRecord *mNonTrivialTail;
   Heap mHeap;
+  NonTrivialList mNonTrivialList;
   OldGeneration &mOldGeneration;
   const std::set<GcReference *> &mGcRoot;
-  ObjectRecord *markAndCopy(ObjectRecord *record);
+  ObjectRecord *markAndCopyStopped(ObjectRecord *record);
 
 };
 

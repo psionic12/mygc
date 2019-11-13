@@ -13,7 +13,7 @@ void *Heap::allocateLocked(size_t size) {
     return ptr;
   }
 }
-void Heap::clearLocked() {
+void Heap::clearStopped() {
   mTail = mStart;
 }
 Heap::Heap(size_t size) : mSize(size), mStart(new char[size]), mTail(mStart), mEnd(mStart + size) {}

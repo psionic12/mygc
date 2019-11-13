@@ -9,16 +9,13 @@
 #include "GarbageCollector.h"
 #include "stop_the_world.h"
 
-#define MYGC_HEAP_SIZE (1 << 22)
-
 #ifndef MYGC_STOP_SIGNAL
 #define MYGC_STOP_SIGNAL SIGRTMIN + ('m' + 'y' + 'g' + 'c') % (SIGRTMAX - SIGRTMIN)
 #endif
 
 std::set<pthread_t> mygc::GarbageCollector::sAttachedThreads;
 
-mygc::GarbageCollector::GarbageCollector()
-    : mHeap(MYGC_HEAP_SIZE) {
+mygc::GarbageCollector::GarbageCollector() {
   stop_the_world_init();
   // initial glog
 //  google::InitGoogleLogging(nullptr);
@@ -30,10 +27,6 @@ mygc::ObjectRecord * mygc::GarbageCollector::New(size_t size) {
   return nullptr;
 }
 void mygc::GarbageCollector::collectLocked() {
-}
-bool mygc::GarbageCollector::inHeap(void *ptr) {
-  std::lock_guard<std::mutex> guard(mGcMutex);
-  return mHeap.inHeapLocked(ptr);
 }
 void mygc::GarbageCollector::addRoots(GcReference *ptr) {
   std::lock_guard<std::mutex> guard(mGcMutex);

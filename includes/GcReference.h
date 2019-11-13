@@ -15,6 +15,7 @@ class GcReference {
  protected:
   GcReference(size_t size);
   virtual ~GcReference();
+  void *getReference();
  public:
   ObjectRecord *getRecord();
   void update(ObjectRecord *newRecord);

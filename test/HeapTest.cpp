@@ -11,7 +11,7 @@ TEST_F(HeapTest, heapTest) {
   ASSERT_NE(ptr, nullptr);
   ptr = chunk.allocateLocked(8);
   ASSERT_EQ(ptr, nullptr);
-  chunk.clearLocked();
+  chunk.clearStopped();
   ptr = chunk.allocateLocked(16);
   ASSERT_NE(ptr, nullptr);
   ptr = chunk.allocateLocked(1);

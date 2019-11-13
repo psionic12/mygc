@@ -10,11 +10,22 @@
 namespace mygc {
 class ObjectRecord {
  public:
-  size_t size = 0;
-  IDescriptor *descriptor = nullptr;
-  ObjectRecord *nextNonTrivial = nullptr;
-  ObjectRecord *preNonTrivial = nullptr;
-  const char *data[];
+  ObjectRecord() : size(0), descriptor(nullptr), copied(false) {
+    nextNonTrivial = nullptr;
+    preNonTrivial = nullptr;
+    forwardAddress = nullptr;
+  }
+  size_t size;
+  IDescriptor *descriptor;
+  bool copied;
+  union {
+    struct {
+      ObjectRecord *nextNonTrivial;
+      ObjectRecord *preNonTrivial;
+    };
+    ObjectRecord *forwardAddress;
+  };
+  char data[];
 };
 }//namespace mygc
 #endif //MYGC_OBJECTRECORD_H
