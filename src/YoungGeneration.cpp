@@ -52,12 +52,11 @@ mygc::ObjectRecord *mygc::YoungGeneration::markAndCopyStopped(mygc::ObjectRecord
     const auto &pair = record->descriptor->getIndices();
     size_t group = pair.first; // big than 1 if it is an array
     const std::vector<size_t> &indices = pair.second;
-    size_t totalSize = sizeof(ObjectRecord) + record->size;
-    ObjectRecord *currentRecord = record;
+    //OPT: most objects are not arrays
     for (int i = 0; i < group; i++) {
-      currentRecord = (ObjectRecord *) ((char *) currentRecord + totalSize);
+      auto *object = record->data + i;
       for (auto index : indices) {
-        auto *ref = (GcReference *) (currentRecord->data + index);
+        auto *ref = (GcReference *) (object + index);
         auto *childForwardAddress = markAndCopyStopped(ref->getRecord());
         ref->update(childForwardAddress);
       }
