@@ -11,7 +11,7 @@ TEST_F(ToolTest, findFirst0) {
   size_t allOne = std::numeric_limits<size_t>::max();
   for (int i = 0; i < sizeof(size_t) * 8; i++) {
     auto n = allOne & ~(1l << i);
-    ASSERT_EQ(mygc::Tools::getFirstZero(n), sizeof(size_t) * 8 - i - 1);
+    ASSERT_EQ(mygc::Tools::getFirstZeroFromLeft(n), sizeof(size_t) * 8 - i - 1);
   }
-  ASSERT_EQ(mygc::Tools::getFirstZero(0), 0);
+  ASSERT_EQ(mygc::Tools::getFirstZeroFromLeft(0), 0);
 }

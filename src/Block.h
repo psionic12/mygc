@@ -26,9 +26,9 @@ class Block {
       // check if there's a zero in this number
       auto number = mBitMaps[i];
       if (number != std::numeric_limits<decltype(number)>::max()) {
-        auto offset = Tools::getFirstZero(number);
+        auto offset = Tools::getFirstZeroFromLeft(number);
         auto index = i * sizeof(decltype(number)) * 8 + offset;
-        mBitMaps |= 1ul << offset;
+        mBitMaps[i] |= 1ul << offset;
         return index;
       } else {
         continue;
@@ -36,11 +36,15 @@ class Block {
     }
   }
   SlotType *getNextSlot(uint64_t index) {
-    uint64_t leadingBitPosition = Tools::getFirstOne(index);
+    uint64_t leadingBitPosition = Tools::getLastOneFromRight(index);
     uint64_t offset = index & ~(1ul << leadingBitPosition);
     if (!mSlots[leadingBitPosition]) {
-      // (int)(std::pow(2, leadingBitPosition - 1) + 0.5) generates 1,1,2,4,8... which doubles the former
-      mSlots[leadingBitPosition] = new SlotType[std::pow(2, leadingBitPosition - 1) + 0.5];
+      if (leadingBitPosition == 0) {
+        mSlots[0] = new SlotType[1];
+      } else {
+        mSlots[leadingBitPosition] = new SlotType[std::pow(2, leadingBitPosition - 1)];
+      }
+
     }
     return mSlots[leadingBitPosition] + offset;
   }
