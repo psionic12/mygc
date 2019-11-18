@@ -40,6 +40,13 @@ TEST_F(BitSetTest, allSetTest) {
     bitSet.setAll({3, 15}, {7, 4});
     ASSERT_EQ(v, bitSet.data());
   }
+  {
+    std::vector<mygc::BitSet::ElementType> v;
+    v.push_back(0x8000000000000000);
+    mygc::BitSet bitSet;
+    bitSet.setAll({0, 0}, {0, 0});
+    ASSERT_EQ(v, bitSet.data());
+  }
 }
 
 TEST_F(BitSetTest, emptyTest) {
@@ -67,14 +74,18 @@ TEST_F(BitSetTest, setTest) {
 TEST_F(BitSetTest, clearTest) {
   mygc::BitSet bitSet;
   bitSet.setAll({0, 0}, {2, 63});
-  std::vector<mygc::BitSet::ElementType>
-      v{0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF};
-  ASSERT_EQ(bitSet.data(), v);
+  std::vector<mygc::BitSet::ElementType> v1{0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF};
+  ASSERT_EQ(bitSet.data(), v1);
+  bitSet.clear();
+  std::vector<mygc::BitSet::ElementType> v2{0, 0, 0};
+  ASSERT_NE(bitSet.data(), v1);
+  ASSERT_EQ(bitSet.data(), v2);
 }
 
 TEST_F(BitSetTest, singleBitTest) {
   mygc::BitSet bitSet;
   bitSet.safeSet({0, 0});
   ASSERT_EQ(bitSet.data(), std::vector<mygc::BitSet::ElementType>{0x8000000000000000});
-
+  bitSet.set({0,63});
+  ASSERT_EQ(bitSet.data(), std::vector<mygc::BitSet::ElementType>{0x8000000000000001});
 }

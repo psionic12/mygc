@@ -10,6 +10,7 @@
 #include <limits>
 #include <cmath>
 #include "Tools.h"
+#include "BitSet.h"
 namespace mygc {
 template<size_t SLOT_SIZE>
 class Block {
