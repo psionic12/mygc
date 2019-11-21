@@ -8,10 +8,16 @@
 #include <vector>
 #include "Tools.h"
 namespace mygc {
-template<typename SlotType>
-class DynamicSlots {
+
+class IDynamicSlots {
  public:
-  void *safeGetSlot(size_t index) {
+  virtual void *safeGetSlot(size_t index) = 0;
+};
+
+template<typename SlotType>
+class DynamicSlots : public IDynamicSlots {
+ public:
+  void *safeGetSlot(size_t index) override {
     size_t naturalIndex = index + 1;
     size_t base = Tools::getLastOneFromRight(naturalIndex) - 1;
     while (mSlots.size() <= base) {
@@ -20,7 +26,7 @@ class DynamicSlots {
     size_t offset = naturalIndex & ~(1ul << base);
     return mSlots[base] + offset;
   }
-  const std::vector<SlotType *>& data() {
+  const std::vector<SlotType *> &data() {
     return mSlots;
   }
  private:

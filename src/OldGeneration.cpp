@@ -12,6 +12,6 @@
 mygc::ObjectRecord *mygc::OldGeneration::copyTo(ObjectRecord *from) {
   return nullptr;
 }
-mygc::OldGeneration::OldGeneration() : mHeap(HEAP_SIZE){
+mygc::OldGeneration::OldGeneration() {
 
 }

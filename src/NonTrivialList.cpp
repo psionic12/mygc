@@ -12,27 +12,27 @@ mygc::NonTrivialList::~NonTrivialList() {
 void mygc::NonTrivialList::add(mygc::ObjectRecord *record) {
 // add it to non-trivial list
   auto *previous = mTail;
-  record->preNonTrivial = previous;
-  previous->nextNonTrivial = record;
+  record->setPreNonTrivial(previous);
+  previous->setNextNonTrivial(record);
   mTail = record;
 }
 void mygc::NonTrivialList::tryRemove(mygc::ObjectRecord *record) {
-  auto *previous = record->preNonTrivial;
-  auto *next = record->nextNonTrivial;
+  auto *previous = record->getPreNonTrivial();
+  auto *next = record->getNextNonTrivial();
   if (previous) {
-    previous->nextNonTrivial = next;
+    previous->setNextNonTrivial(next);
     if (next) {
-      next->preNonTrivial = previous;
+      next->setPreNonTrivial(previous);
     } else {
       mTail = previous;
     }
   }
 }
 void mygc::NonTrivialList::clear() {
-  auto *ptr = mHead->nextNonTrivial;
+  auto *ptr = mHead->getNextNonTrivial();
   while (ptr) {
-    ptr->descriptor->destructor(ptr->data);
-    ptr = ptr->nextNonTrivial;
+    ptr->getDescriptor()->destructor(ptr->getData());
+    ptr = ptr->getNextNonTrivial();
   }
-  mHead->nextNonTrivial = nullptr;
+  mHead->setNextNonTrivial(nullptr);
 }

@@ -86,6 +86,18 @@ TEST_F(BitSetTest, singleBitTest) {
   mygc::BitSet bitSet;
   bitSet.safeSet({0, 0});
   ASSERT_EQ(bitSet.data(), std::vector<mygc::BitSet::ElementType>{0x8000000000000000});
-  bitSet.set({0,63});
+  bitSet.set({0, 63});
   ASSERT_EQ(bitSet.data(), std::vector<mygc::BitSet::ElementType>{0x8000000000000001});
+}
+
+TEST_F(BitSetTest, indexTest) {
+  mygc::BitSet bitSet;
+  auto index = bitSet.getUnset().getIndex();
+  ASSERT_EQ(index, 0);
+  bitSet.safeSet({0, 0});
+  index = bitSet.getUnset().getIndex();
+  ASSERT_EQ(index, 1);
+  bitSet.setAll({0, 0}, {1, 1});
+  index = bitSet.getUnset().getIndex();
+  ASSERT_EQ(index, 66);
 }

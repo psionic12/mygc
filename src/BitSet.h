@@ -15,12 +15,12 @@ class BitSet {
   struct Coordinate {
     size_t group;
     unsigned int offset;
+    inline size_t getIndex() {
+      return group * kElementSize + offset;
+    }
   };
   typedef uint64_t ElementType;
   Coordinate getUnset();
-  inline size_t getIndex(const Coordinate &pair) {
-    return pair.group * kElementSize + pair.offset;
-  }
   inline void set(const Coordinate &index) {
     mBitSet[index.group] |= kMask >> index.offset;
   }

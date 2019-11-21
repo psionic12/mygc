@@ -8,7 +8,7 @@
 #include <IDescriptor.h>
 
 template<typename T>
-class CppDescriptor : public IDescriptor {
+class CppDescriptor : public mygc::IDescriptor {
  public:
   CppDescriptor(std::vector<size_t> &&indices) : mIndices(std::move(indices)) {}
   std::pair<const size_t, const std::vector<size_t> &> getIndices() override {
@@ -22,7 +22,7 @@ class CppDescriptor : public IDescriptor {
 };
 
 template<typename T, size_t SIZE>
-class CppDescriptor<T[SIZE]> : public IDescriptor {
+class CppDescriptor<T[SIZE]> : public mygc::IDescriptor {
  public:
   CppDescriptor(IDescriptor *descriptor) : mIndices(descriptor->getIndices().second) {}
   std::pair<const size_t, const std::vector<size_t> &> getIndices() override {
@@ -32,6 +32,9 @@ class CppDescriptor<T[SIZE]> : public IDescriptor {
     for (size_t i = 0; i < SIZE; i++) {
       (static_cast<const T *>(object) + i)->~T();
     }
+  }
+  size_t typeSize() override {
+    return sizeof(T);
   }
  private:
   const std::vector<size_t> &mIndices;

@@ -18,7 +18,7 @@ class GcReference;
 class YoungGeneration {
  public:
   YoungGeneration(OldGeneration &oldGeneration, std::set<GcReference *> &gcRoot);
-  void *allocateLocked(size_t size, IDescriptor *descriptor, bool nonTrivial);
+  void *allocateLocked(IDescriptor *descriptor, bool nonTrivial);
   void collectStopped();
  private:
   Heap mHeap;
