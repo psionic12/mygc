@@ -11,7 +11,7 @@ class IDescriptor {
   virtual std::pair<const size_t, const std::vector<size_t> &> getIndices() = 0;
   virtual void destructor(void *object) = 0;
   virtual size_t typeSize() = 0;
-  int getSlotIndex();
+  int getBlockIndex();
  private:
   int mSlotIndex = -1;
 };

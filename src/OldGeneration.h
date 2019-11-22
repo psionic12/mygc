@@ -6,20 +6,35 @@
 #define MYGC_OLDGENERATION_H
 
 #include "Block.h"
+#include "PendingDestructors.h"
 namespace mygc {
 class ObjectRecord;
 class OldGeneration {
  public:
-  OldGeneration();
-  ObjectRecord *copyTo(ObjectRecord *from);
+  ObjectRecord *copyToStopped(ObjectRecord *from);
+  ~OldGeneration() {
+    for (auto &block : mBlocks) {
+      delete block;
+    }
+  }
+  void onCollectionFinished();
  private:
-  Block<(1 << 6)> mBlock6;
-  Block<(1 << 7)> mBlock7;
-  Block<(1 << 8)> mBlock8;
-  Block<(1 << 9)> mBlock9;
-  Block<(1 << 10)> mBlock10;
-  Block<(1 << 11)> mBlock11;
-  Block<(1 << 12)> mBlock12;
+  IBlock *mBlocks[13]{
+      nullptr,
+      nullptr,
+      nullptr,
+      nullptr,
+      nullptr,
+      nullptr,
+      new Block<(1 << 6)>,
+      new Block<(1 << 7)>,
+      new Block<(1 << 8)>,
+      new Block<(1 << 9)>,
+      new Block<(1 << 10)>,
+      new Block<(1 << 11)>,
+      new Block<(1 << 12)>
+  };
+  PendingDestructors mPendingDestructors;
 
 };
 }

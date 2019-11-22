@@ -2,21 +2,21 @@
 // Created by liu on 19-11-13.
 //
 
-#include "NonTrivialList.h"
+#include "PendingDestructors.h"
 #include "ObjectRecord.h"
-mygc::NonTrivialList::NonTrivialList() : mHead(new ObjectRecord), mTail(mHead) {
+mygc::PendingDestructors::PendingDestructors() : mHead(new ObjectRecord), mTail(mHead) {
 }
-mygc::NonTrivialList::~NonTrivialList() {
+mygc::PendingDestructors::~PendingDestructors() {
   delete (mHead);
 }
-void mygc::NonTrivialList::add(mygc::ObjectRecord *record) {
+void mygc::PendingDestructors::add(mygc::ObjectRecord *record) {
 // add it to non-trivial list
   auto *previous = mTail;
   record->setPreNonTrivial(previous);
   previous->setNextNonTrivial(record);
   mTail = record;
 }
-void mygc::NonTrivialList::tryRemove(mygc::ObjectRecord *record) {
+void mygc::PendingDestructors::tryRemove(mygc::ObjectRecord *record) {
   auto *previous = record->getPreNonTrivial();
   auto *next = record->getNextNonTrivial();
   if (previous) {
@@ -28,10 +28,10 @@ void mygc::NonTrivialList::tryRemove(mygc::ObjectRecord *record) {
     }
   }
 }
-void mygc::NonTrivialList::clear() {
+void mygc::PendingDestructors::clear() {
   auto *ptr = mHead->getNextNonTrivial();
   while (ptr) {
-    ptr->getDescriptor()->destructor(ptr->getData());
+    ptr->getDescriptor()->callDestructor(ptr->getData());
     ptr = ptr->getNextNonTrivial();
   }
   mHead->setNextNonTrivial(nullptr);

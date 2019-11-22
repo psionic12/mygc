@@ -9,15 +9,16 @@
 #include <set>
 #include <condition_variable>
 
-#include "Heap.h"
 #include "YoungGeneration.h"
+#include "TypeDescriptor.h"
+#include "OldGeneration.h"
 
 namespace mygc {
 class GcReference;
 class ObjectRecord;
 class GarbageCollector {
  public:
-  ObjectRecord * New(size_t size);
+  ObjectRecord *New(TypeDescriptor &descriptor);
   bool inHeap(void *ptr);
   void addRoots(GcReference *ptr);
   void removeRoots(GcReference *ptr);
@@ -25,14 +26,21 @@ class GarbageCollector {
   void detachThread(pthread_t thread);
   static GarbageCollector &getCollector();
   std::set<pthread_t> getAttachedThreads();
+  void registerType(size_t id,
+                    size_t typeSize,
+                    std::pair<const size_t, const std::vector<size_t>> &&indices,
+                    void (*destructor)(void *object) = nullptr);
  private:
   GarbageCollector();
-  void collectLocked();
+  void collectStopped();
   void stopTheWorldLocked();
   void restartTheWorldLocked();
   std::mutex mGcMutex;
   std::set<GcReference *> mGcRoots;
-  static std::set<pthread_t> sAttachedThreads;
+  std::set<pthread_t> mAttachedThreads;
+  std::map<size_t, TypeDescriptor> mTypeMap;
+  OldGeneration mOldGeneration;
+  YoungGeneration mYoungGeneration;
 };
 
 } //namespace mygc

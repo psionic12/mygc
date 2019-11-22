@@ -6,8 +6,8 @@
 #define MYGC_OBJECTRECORD_H
 
 #include <cstddef>
-#include "IDescriptor.h"
 #include "Tools.h"
+#include "TypeDescriptor.h"
 namespace mygc {
 constexpr uint64_t bits(const uint64_t x) {
   uint64_t i = 64;
@@ -32,10 +32,10 @@ class ObjectRecord {
     preNonTrivial = nullptr;
     forwardAddress = nullptr;
   }
-  IDescriptor *getDescriptor() {
+  TypeDescriptor *getDescriptor() {
     return mDescriptor;
   }
-  void setDescriptor(IDescriptor *descriptor) {
+  void setDescriptor(TypeDescriptor *descriptor) {
     ObjectRecord::mDescriptor = descriptor;
   }
   char *getData() {
@@ -74,7 +74,7 @@ class ObjectRecord {
  private:
   bool copied : 1;
   Location location : bits(static_cast<int>(Location::kEnd));
-  IDescriptor *mDescriptor;
+  TypeDescriptor *mDescriptor;
   union {
     struct {
       ObjectRecord *nextNonTrivial;

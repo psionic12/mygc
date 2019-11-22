@@ -8,7 +8,8 @@
 #include <set>
 #include "Heap.h"
 #include "IDescriptor.h"
-#include "NonTrivialList.h"
+#include "PendingDestructors.h"
+#include "TypeDescriptor.h"
 namespace mygc {
 
 class ObjectRecord;
@@ -18,11 +19,13 @@ class GcReference;
 class YoungGeneration {
  public:
   YoungGeneration(OldGeneration &oldGeneration, std::set<GcReference *> &gcRoot);
-  void *allocateLocked(IDescriptor *descriptor, bool nonTrivial);
+  ObjectRecord *allocateLocked(TypeDescriptor &descriptor);
   void collectStopped();
+  void onCollectionFinished();
+  ObjectRecord* begin();
  private:
   Heap mHeap;
-  NonTrivialList mNonTrivialList;
+  PendingDestructors mPendingDestructors;
   OldGeneration &mOldGeneration;
   const std::set<GcReference *> &mGcRoot;
   ObjectRecord *markAndCopyStopped(ObjectRecord *record);

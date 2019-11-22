@@ -6,10 +6,10 @@
 #define MYGC_NONTRIVIALLIST_H
 namespace mygc {
 class ObjectRecord;
-class NonTrivialList {
+class PendingDestructors {
  public:
-  NonTrivialList();
-  ~NonTrivialList();
+  PendingDestructors();
+  ~PendingDestructors();
   void add(ObjectRecord *record);
   /// try to remove a record from the list
   /// This method do not call object's destructor

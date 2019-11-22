@@ -8,16 +8,10 @@
 #include <vector>
 #include "Tools.h"
 namespace mygc {
-
-class IDynamicSlots {
- public:
-  virtual void *safeGetSlot(size_t index) = 0;
-};
-
 template<typename SlotType>
-class DynamicSlots : public IDynamicSlots {
+class DynamicSlots {
  public:
-  void *safeGetSlot(size_t index) override {
+  void *safeGetSlot(size_t index) {
     size_t naturalIndex = index + 1;
     size_t base = Tools::getLastOneFromRight(naturalIndex) - 1;
     while (mSlots.size() <= base) {
