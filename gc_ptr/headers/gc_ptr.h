@@ -11,8 +11,6 @@
 #include <memory>
 #include <glog/logging.h>
 
-#include "../../src/GarbageCollector.h"
-#include "CppDescriptor.h"
 #include "GcReference.h"
 
 namespace mygc {

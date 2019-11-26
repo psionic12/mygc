@@ -12,7 +12,7 @@ class Heap {
  public:
   Heap(size_t size);
   ~Heap();
-  void *allocateLocked(size_t size);
+  void *allocate(size_t size);
   void clearStopped();
   bool inHeapLocked(void *ptr);
  private:

@@ -9,22 +9,19 @@
 #define HEAP_SIZE 2 << 22
 #endif
 
-mygc::ObjectRecord *mygc::OldGeneration::copyToStopped(ObjectRecord *from) {
-  auto *descriptor = from->getDescriptor();
+mygc::OldRecord *mygc::OldGeneration::copyToStopped(YoungRecord *from) {
+  auto *descriptor = from->descriptor;
   // choose which block to use first
   auto blockIndex = descriptor->getBlockIndex();
   auto *block = mBlocks[blockIndex];
   void *ptr = block->getUnusedAndMark();
-  auto *record = (ObjectRecord *) ptr;
-  memcpy(record, from, descriptor->totalSize());
-  record->setLocation(ObjectRecord::Location::kOldGeneration);
-  if (descriptor->nonTrivial()) {
-    mPendingDestructors.add(record);
-  }
+  auto *record = (OldRecord *) ptr;
+  record->location = Location::kOldGeneration;
+  record->descriptor = from->descriptor;
+  memcpy(record->data, from->data, descriptor->typeSize());
   return record;
 }
 void mygc::OldGeneration::onCollectionFinished() {
-  mPendingDestructors.clear();
   for (auto &block : mBlocks) {
     if (block) {
       block->onCollectionFinished();

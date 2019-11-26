@@ -5,20 +5,19 @@
 #ifndef MYGC_REFERENCE_H
 #define MYGC_REFERENCE_H
 
-#include "../src/GarbageCollector.h"
-
+#include <cstddef>
 namespace mygc {
-class ObjectRecord;
+class ObjectRecordHeader;
 class GcReference {
  private:
-  ObjectRecord *mPtr = nullptr;
+  ObjectRecordHeader *mPtr = nullptr;
  protected:
-  GcReference(size_t size);
+  GcReference(size_t typeId);
   virtual ~GcReference();
   void *getReference();
  public:
-  ObjectRecord *getRecord();
-  void update(ObjectRecord *newRecord);
+  ObjectRecordHeader *getRecord();
+  void update(ObjectRecordHeader *newRecord);
 };
 
 }//namespace mygc

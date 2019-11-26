@@ -78,3 +78,6 @@ void mygc::GarbageCollector::registerType(size_t id,
     mTypeMap.insert({id, {typeSize, std::move(indices), destructor}});
   }
 }
+mygc::TypeDescriptor &mygc::GarbageCollector::getTypeById(size_t id) {
+  return mTypeMap.at(id);
+}

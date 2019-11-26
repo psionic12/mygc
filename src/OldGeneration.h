@@ -7,17 +7,19 @@
 
 #include "Block.h"
 #include "PendingDestructors.h"
+#include "ObjectRecord.h"
 namespace mygc {
 class ObjectRecord;
 class OldGeneration {
  public:
-  ObjectRecord *copyToStopped(ObjectRecord *from);
+  OldRecord * copyToStopped(mygc::YoungRecord *from);
   ~OldGeneration() {
     for (auto &block : mBlocks) {
       delete block;
     }
   }
   void onCollectionFinished();
+
  private:
   IBlock *mBlocks[13]{
       nullptr,
@@ -34,8 +36,6 @@ class OldGeneration {
       new Block<(1 << 11)>,
       new Block<(1 << 12)>
   };
-  PendingDestructors mPendingDestructors;
-
 };
 }
 

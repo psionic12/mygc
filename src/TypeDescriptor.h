@@ -8,6 +8,8 @@
 #include <vector>
 #include <map>
 namespace mygc {
+//no use, just for type safe;
+class Object {};
 class TypeDescriptor {
  public:
   TypeDescriptor(size_t typeSize,
@@ -17,14 +19,12 @@ class TypeDescriptor {
   std::pair<const size_t, const std::vector<size_t>> &getIndices() {
     return mIndices;
   }
-  void callDestructor(void *object) {
+  void *callDestructor(Object *object) {
     mDestructor(object);
   }
   size_t typeSize() {
     return mTypeSize;
   }
-  // type size + object record size
-  size_t totalSize();
   /// get index of the block in old generation which this type belongs to, big object do not use this
   int getBlockIndex() {
     return mBlockIndex;

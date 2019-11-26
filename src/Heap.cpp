@@ -4,7 +4,7 @@
 
 #include "Heap.h"
 using namespace mygc;
-void *Heap::allocateLocked(size_t size) {
+void *Heap::allocate(size_t size) {
   if (mTail + size > mEnd) {
     return nullptr;
   } else {

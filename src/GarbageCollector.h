@@ -12,6 +12,7 @@
 #include "YoungGeneration.h"
 #include "TypeDescriptor.h"
 #include "OldGeneration.h"
+#include "YoungGenerationPool.h"
 
 namespace mygc {
 class GcReference;
@@ -30,6 +31,7 @@ class GarbageCollector {
                     size_t typeSize,
                     std::pair<const size_t, const std::vector<size_t>> &&indices,
                     void (*destructor)(void *object) = nullptr);
+  TypeDescriptor &getTypeById(size_t id);
  private:
   GarbageCollector();
   void collectStopped();
@@ -40,7 +42,7 @@ class GarbageCollector {
   std::set<pthread_t> mAttachedThreads;
   std::map<size_t, TypeDescriptor> mTypeMap;
   OldGeneration mOldGeneration;
-  YoungGeneration mYoungGeneration;
+  YoungGenerationPool mYoungPool;
 };
 
 } //namespace mygc

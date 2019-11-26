@@ -10,6 +10,7 @@
 #include "IDescriptor.h"
 #include "PendingDestructors.h"
 #include "TypeDescriptor.h"
+#include "ObjectRecord.h"
 namespace mygc {
 
 class ObjectRecord;
@@ -18,18 +19,12 @@ class GcReference;
 
 class YoungGeneration {
  public:
-  YoungGeneration(OldGeneration &oldGeneration, std::set<GcReference *> &gcRoot);
-  ObjectRecord *allocateLocked(TypeDescriptor &descriptor);
-  void collectStopped();
-  void onCollectionFinished();
-  ObjectRecord* begin();
+  YoungGeneration();
+  mygc::YoungRecord * allocate(TypeDescriptor &descriptor);
+  YoungRecord *getFinalizerHeader() const;
  private:
   Heap mHeap;
-  PendingDestructors mPendingDestructors;
-  OldGeneration &mOldGeneration;
-  const std::set<GcReference *> &mGcRoot;
-  ObjectRecord *markAndCopyStopped(ObjectRecord *record);
-
+  YoungRecord* mFinalizerHead;
 };
 
 }//namespace mygc
