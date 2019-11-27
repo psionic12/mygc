@@ -10,8 +10,8 @@ namespace mygc {
 class IBlock {
  public:
   virtual ~IBlock() = default;
-  virtual void *getUnusedAndMark() = 0;
-  virtual void onCollectionFinished() = 0;
+  virtual std::pair<size_t, void *> getUnusedAndMark() = 0;
+  virtual void handleFinalizers() = 0;
   virtual void mark(size_t index) = 0;
 };
 
@@ -21,30 +21,21 @@ class Block : public IBlock {
   typedef char SlotType[Size];
   //current set is used to get definitely unused slot, it's "used" sets are not reliable, but "unused" sets are reliable
   BitSet *mCurrentSet;
-  // new set is used to mark alive objects during gc
-  BitSet *mNewSet;
   DynamicSlots<SlotType> mSlots;
  public:
-  Block() : mCurrentSet(new BitSet), mNewSet(new BitSet) {}
+  Block() : mCurrentSet(new BitSet) {}
   virtual ~Block() {
     delete (mCurrentSet);
-    delete (mNewSet);
   }
-  void *getUnusedAndMark() override {
+  std::pair<size_t, void *> getUnusedAndMark() override {
     auto coordinate = mCurrentSet->getUnset();
     auto index = coordinate.getIndex();
     auto *ptr = mSlots.safeGetSlot(index);
     mCurrentSet->set(coordinate);
-    return ptr;
+    return {index, ptr};
   }
-  void onCollectionFinished() override {
-    // when collecting finished ,mNewSet got the full information about usage of this block
-    // so we assign it to mCurrentSet for next collecting.
-    auto *temp = mCurrentSet;
-    mCurrentSet = mNewSet;
-    // clean mNewSet for next collecting
-    mNewSet = temp;
-    mNewSet->clear();
+  void handleFinalizers() override {
+
   }
   void mark(size_t index) override {
     mCurrentSet->set(index);

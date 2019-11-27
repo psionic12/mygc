@@ -4,22 +4,21 @@
 
 #ifndef MYGC_OLDGENERATION_H
 #define MYGC_OLDGENERATION_H
+#include <mutex>
 
 #include "Block.h"
-#include "PendingDestructors.h"
 #include "ObjectRecord.h"
 namespace mygc {
-class ObjectRecord;
 class OldGeneration {
  public:
-  OldRecord * copyToStopped(mygc::YoungRecord *from);
+  OldGeneration();
+  OldRecord *copyToStopped(mygc::YoungRecord *from);
   ~OldGeneration() {
     for (auto &block : mBlocks) {
       delete block;
     }
   }
-  void onCollectionFinished();
-
+  void onScanBegin();
  private:
   IBlock *mBlocks[13]{
       nullptr,
@@ -36,6 +35,9 @@ class OldGeneration {
       new Block<(1 << 11)>,
       new Block<(1 << 12)>
   };
+  OldRecord *mLivingFinalizer;
+  OldRecord *mDeadFinalizer;
+  std::mutex mDeadFinalizerMutex;
 };
 }
 

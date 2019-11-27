@@ -13,13 +13,12 @@
 #include "TypeDescriptor.h"
 #include "OldGeneration.h"
 #include "YoungGenerationPool.h"
+#include "GcReference.h"
 
 namespace mygc {
-class GcReference;
-class ObjectRecord;
 class GarbageCollector {
  public:
-  ObjectRecord *New(TypeDescriptor &descriptor);
+  YoungRecord * New(TypeDescriptor &descriptor);
   bool inHeap(void *ptr);
   void addRoots(GcReference *ptr);
   void removeRoots(GcReference *ptr);
@@ -34,7 +33,6 @@ class GarbageCollector {
   TypeDescriptor &getTypeById(size_t id);
  private:
   GarbageCollector();
-  void collectStopped();
   void stopTheWorldLocked();
   void restartTheWorldLocked();
   std::mutex mGcMutex;
@@ -43,6 +41,7 @@ class GarbageCollector {
   std::map<size_t, TypeDescriptor> mTypeMap;
   OldGeneration mOldGeneration;
   YoungGenerationPool mYoungPool;
+  std::unique_ptr<YoungGeneration> mYoungGeneration;
 };
 
 } //namespace mygc

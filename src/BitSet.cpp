@@ -40,7 +40,7 @@ void mygc::BitSet::setAll(const mygc::BitSet::Coordinate &from, const mygc::BitS
     first |= std::numeric_limits<ElementType>::max() >> from.offset;
   }
 }
-const std::vector<mygc::BitSet::ElementType> &mygc::BitSet::data() {
+const std::vector<mygc::BitSet::ElementType> &mygc::BitSet::data() const {
   return mBitSet;
 }
 void mygc::BitSet::safeSet(const mygc::BitSet::Coordinate &index) {
@@ -51,3 +51,15 @@ void mygc::BitSet::safeSet(size_t index) {
   getOrCreate(index / kElementSize);
   set(index);
 }
+mygc::BitSet mygc::BitSet::XOR(const BitSet &set) {
+  auto it1 = mBitSet.begin();
+  auto it2 = set.data().begin();
+  std::vector<mygc::BitSet::ElementType> v3;
+  while (it2 != set.data().end()) {
+    v3.push_back(*it1 xor *it2);
+    it1++;
+    it2++;
+  }
+  return BitSet(std::move(v3));
+}
+mygc::BitSet::BitSet(std::vector<mygc::BitSet::ElementType> &&v) : mBitSet(std::move(v)) {}

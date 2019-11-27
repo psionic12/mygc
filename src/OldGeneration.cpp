@@ -14,17 +14,25 @@ mygc::OldRecord *mygc::OldGeneration::copyToStopped(YoungRecord *from) {
   // choose which block to use first
   auto blockIndex = descriptor->getBlockIndex();
   auto *block = mBlocks[blockIndex];
-  void *ptr = block->getUnusedAndMark();
+  auto pair = block->getUnusedAndMark();
+  void *ptr = pair.second;
   auto *record = (OldRecord *) ptr;
+  record->index = pair.first;
   record->location = Location::kOldGeneration;
   record->descriptor = from->descriptor;
   memcpy(record->data, from->data, descriptor->typeSize());
+  if (record->descriptor->nonTrivial()) {
+    auto *temp = mLivingFinalizer;
+    mLivingFinalizer = record;
+    record->preNonTrivial = temp;
+    if (record->preNonTrivial) {
+      record->preNonTrivial->nextNonTrivial = record;
+    }
+    record->nextNonTrivial = nullptr;
+  }
   return record;
 }
-void mygc::OldGeneration::onCollectionFinished() {
-  for (auto &block : mBlocks) {
-    if (block) {
-      block->onCollectionFinished();
-    }
-  }
+mygc::OldGeneration::OldGeneration() : mLivingFinalizer(nullptr), mDeadFinalizer(nullptr) {}
+void mygc::OldGeneration::onScanBegin() {
+
 }

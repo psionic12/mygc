@@ -7,17 +7,17 @@
 
 #include <cstddef>
 namespace mygc {
-class ObjectRecordHeader;
+class Record;
 class GcReference {
  private:
-  ObjectRecordHeader *mPtr = nullptr;
+  Record *mPtr = nullptr;
  protected:
   GcReference(size_t typeId);
   virtual ~GcReference();
   void *getReference();
  public:
-  ObjectRecordHeader *getRecord();
-  void update(ObjectRecordHeader *newRecord);
+  Record *getRecord();
+  void update(Record *newRecord);
 };
 
 }//namespace mygc

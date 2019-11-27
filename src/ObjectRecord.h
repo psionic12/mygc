@@ -13,20 +13,21 @@ enum class Location {
   kLargeObjects,
 };
 
-struct ObjectRecordHeader {
+struct Record {
   Location location = Location::kYoungGeneration;
   TypeDescriptor *descriptor = nullptr;
+  Record *nextNonTrivial = nullptr;
+  Record *preNonTrivial = nullptr;
 };
 
-struct YoungRecord : ObjectRecordHeader {
+struct YoungRecord : Record {
   bool copied = false;
-  YoungRecord *nextNonTrivial = nullptr;
-  YoungRecord *preNonTrivial = nullptr;
   YoungRecord *forwardAddress = nullptr;
   Object data[];
 };
 
-struct OldRecord : ObjectRecordHeader {
+struct OldRecord : Record {
+  size_t index = 0;
   Object data[];
 };
 }

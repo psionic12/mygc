@@ -8,15 +8,9 @@
 #include <set>
 #include "Heap.h"
 #include "IDescriptor.h"
-#include "PendingDestructors.h"
 #include "TypeDescriptor.h"
 #include "ObjectRecord.h"
 namespace mygc {
-
-class ObjectRecord;
-class OldGeneration;
-class GcReference;
-
 class YoungGeneration {
  public:
   YoungGeneration();

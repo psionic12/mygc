@@ -17,7 +17,7 @@ void mygc::YoungGenerationPool::finalize() {
     auto *ptr = generation->getFinalizerHeader();
     while (ptr) {
       ptr->descriptor->callDestructor(ptr->data);
-      ptr = ptr->nextNonTrivial;
+      ptr = (YoungRecord *) ptr->nextNonTrivial;
     }
 
     lock.lock();
@@ -25,7 +25,7 @@ void mygc::YoungGenerationPool::finalize() {
     lock.unlock();
   }
 }
-mygc::YoungGenerationPool::YoungGenerationPool() : mFinalizer(&YoungGenerationPool::finalize) {
+mygc::YoungGenerationPool::YoungGenerationPool() : mFinalizer(&YoungGenerationPool::finalize, this) {
   mFinalizer.detach();
 }
 void mygc::YoungGenerationPool::putDirtyGeneration(std::unique_ptr<mygc::YoungGeneration> &&generation) {

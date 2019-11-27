@@ -20,6 +20,8 @@ class BitSet {
     }
   };
   typedef uint64_t ElementType;
+  BitSet() = default;
+  BitSet(std::vector<ElementType>&& v);
   Coordinate getUnset();
   inline void set(const Coordinate &index) {
     mBitSet[index.group] |= kMask >> index.offset;
@@ -39,7 +41,8 @@ class BitSet {
     memset(mBitSet.data(), 0, mBitSet.capacity() * sizeof(ElementType));
   }
   void setAll(const Coordinate &from, const Coordinate &to);
-  const std::vector<ElementType> &data();
+  BitSet XOR(const BitSet &set);
+  const std::vector<ElementType> &data() const;
  private:
   static constexpr int kElementSize = sizeof(ElementType) * 8;
   static constexpr ElementType kMask = 1UL << (kElementSize - 1);

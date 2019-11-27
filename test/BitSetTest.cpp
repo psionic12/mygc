@@ -101,3 +101,16 @@ TEST_F(BitSetTest, indexTest) {
   index = bitSet.getUnset().getIndex();
   ASSERT_EQ(index, 66);
 }
+
+TEST_F(BitSetTest, XORTest) {
+  mygc::BitSet bitSet1;
+  bitSet1.safeSet({1, 2});
+  bitSet1.safeSet({1, 3});
+  mygc::BitSet bitSet2;
+  bitSet2.safeSet({1, 0});
+  bitSet2.safeSet({1, 3});
+  auto result = bitSet1.XOR(bitSet2);
+  std::vector<mygc::BitSet::ElementType> v{0, 0xA000000000000000};
+  ASSERT_EQ(result.data(), v);
+
+}

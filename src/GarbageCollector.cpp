@@ -11,31 +11,26 @@
 #define MYGC_STOP_SIGNAL SIGRTMIN + ('m' + 'y' + 'g' + 'c') % (SIGRTMAX - SIGRTMIN)
 #endif
 
-mygc::GarbageCollector::GarbageCollector() : mYoungGeneration(mOldGeneration, mGcRoots) {
+mygc::GarbageCollector::GarbageCollector() : mYoungGeneration(mYoungPool.getCleanGeneration()) {
   stop_the_world_init();
   // initial glog
 //  google::InitGoogleLogging(nullptr);
   FLAGS_logtostderr = true;
 }
 
-mygc::ObjectRecord *mygc::GarbageCollector::New(TypeDescriptor &descriptor) {
+mygc::YoungRecord * mygc::GarbageCollector::New(TypeDescriptor &descriptor) {
   std::lock_guard<std::mutex> guard(mGcMutex);
-  auto *ptr = mYoungGeneration.allocateLocked(descriptor);
+  auto *ptr = mYoungGeneration->allocate(descriptor);
   if (!ptr) {
     stop_the_world(mAttachedThreads);
-    collectStopped();
-    mOldGeneration.onCollectionFinished();
-    mYoungGeneration.onCollectionFinished();
+
     restart_the_world();
-    ptr = mYoungGeneration.allocateLocked(descriptor);
+    ptr = mYoungGeneration->allocate(descriptor);
     if (!ptr) {
       throw std::runtime_error("mygc is out of memory");
     }
   }
   return ptr;
-}
-void mygc::GarbageCollector::collectStopped() {
-  mYoungGeneration.collectStopped();
 }
 void mygc::GarbageCollector::addRoots(GcReference *ptr) {
   std::lock_guard<std::mutex> guard(mGcMutex);
