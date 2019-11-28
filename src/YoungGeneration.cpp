@@ -7,24 +7,16 @@
 #ifndef YOUNG_GENERATION_SIZE
 #define YOUNG_GENERATION_SIZE 2 << 12
 #endif
-mygc::YoungGeneration::YoungGeneration() : mHeap(YOUNG_GENERATION_SIZE), mFinalizerHead(nullptr) {}
+mygc::YoungGeneration::YoungGeneration() : mHeap(YOUNG_GENERATION_SIZE) {}
 mygc::YoungRecord *mygc::YoungGeneration::allocate(mygc::TypeDescriptor &descriptor) {
   auto *record = (YoungRecord *) mHeap.allocate(sizeof(YoungRecord) + descriptor.typeSize());
   record->location = Location::kYoungGeneration;
   record->descriptor = &descriptor;
   record->copied = false;
   record->forwardAddress = nullptr;
+  record->generation = this;
   if (descriptor.nonTrivial()) {
-    auto *temp = mFinalizerHead;
-    mFinalizerHead = record;
-    record->preNonTrivial = temp;
-    if (record->preNonTrivial) {
-      record->preNonTrivial->nextNonTrivial = record;
-    }
-    record->nextNonTrivial = nullptr;
+    mFinalizerList.add(record);
   }
   return record;
-}
-mygc::YoungRecord *mygc::YoungGeneration::getFinalizerHeader() const {
-  return mFinalizerHead;
 }

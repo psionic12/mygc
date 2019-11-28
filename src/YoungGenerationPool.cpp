@@ -14,7 +14,7 @@ void mygc::YoungGenerationPool::finalize() {
     mDirty.pop_back();
     lock.unlock();
 
-    auto *ptr = generation->getFinalizerHeader();
+    auto *ptr = (YoungRecord *) generation->getFinalizerList().getHead();
     while (ptr) {
       ptr->descriptor->callDestructor(ptr->data);
       ptr = (YoungRecord *) ptr->nextNonTrivial;

@@ -18,7 +18,7 @@ mygc::GarbageCollector::GarbageCollector() : mYoungGeneration(mYoungPool.getClea
   FLAGS_logtostderr = true;
 }
 
-mygc::YoungRecord * mygc::GarbageCollector::New(TypeDescriptor &descriptor) {
+mygc::YoungRecord *mygc::GarbageCollector::New(TypeDescriptor &descriptor) {
   std::lock_guard<std::mutex> guard(mGcMutex);
   auto *ptr = mYoungGeneration->allocate(descriptor);
   if (!ptr) {
@@ -75,4 +75,62 @@ void mygc::GarbageCollector::registerType(size_t id,
 }
 mygc::TypeDescriptor &mygc::GarbageCollector::getTypeById(size_t id) {
   return mTypeMap.at(id);
+}
+
+mygc::Record *mygc::GarbageCollector::collectRecordSTW(Record *root) {
+  Object *data = nullptr;
+  Record *handledRecord = nullptr;
+  switch (root->location) {
+    case Location::kYoungGeneration: {
+      auto *young = (YoungRecord *) root;
+      OldRecord *old;
+      if (!young->copied) {
+        old = mOldGeneration.copyFromYoungSTW(young);
+        young->copied = true;
+        if(young->descriptor->nonTrivial()) {
+          young->generation->getFinalizerList().remove(young);
+        }
+        young->forwardAddress = old;
+      } else {
+        old = young->forwardAddress;
+      }
+      data = old->data;
+      handledRecord = old;
+      break;
+    }
+    case Location::kOldGeneration: {
+      auto *old = (OldRecord *) root;
+      mOldGeneration.mark(old);
+      break;
+    }
+    case Location::kLargeObjects: {
+      break;
+    }
+  }
+  // handle children
+  const auto &pair = handledRecord->descriptor->getIndices();
+  size_t group = pair.first; // big than 1 if it is an array
+  const std::vector<size_t> &indices = pair.second;
+  //OPT: most objects are not arrays
+  for (int i = 0; i < group; i++) {
+    auto *arrayData = data + i;
+    for (auto index : indices) {
+      auto *ref = (GcReference *) (arrayData + index);
+      auto *childHandledRecord = collectRecordSTW(ref->getRecord());
+      ref->update(childHandledRecord);
+    }
+  }
+  return handledRecord;
+}
+void mygc::GarbageCollector::collectSTW() {
+  for (auto *ref : mGcRoots) {
+    auto *record = ref->getRecord();
+    if (record) {
+      auto *ptr = collectRecordSTW(record);
+      ref->update(ptr);
+    }
+  }
+  mOldGeneration.onScanEnd();
+  mYoungPool.putDirtyGeneration(std::move(mYoungGeneration));
+  mYoungGeneration = mYoungPool.getCleanGeneration();
 }

@@ -20,14 +20,16 @@ struct Record {
   Record *preNonTrivial = nullptr;
 };
 
-struct YoungRecord : Record {
-  bool copied = false;
-  YoungRecord *forwardAddress = nullptr;
-  Object data[];
-};
-
 struct OldRecord : Record {
   size_t index = 0;
+  Object data[];
+};
+class YoungGeneration;
+struct YoungRecord : Record {
+  bool copied = false;
+  // if copied, this address is the new location in old generation
+  OldRecord *forwardAddress = nullptr;
+  YoungGeneration *generation = nullptr;
   Object data[];
 };
 }

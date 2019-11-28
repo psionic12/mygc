@@ -112,5 +112,10 @@ TEST_F(BitSetTest, XORTest) {
   auto result = bitSet1.XOR(bitSet2);
   std::vector<mygc::BitSet::ElementType> v{0, 0xA000000000000000};
   ASSERT_EQ(result.data(), v);
+}
 
+TEST_F(BitSetTest, isSetTest) {
+  mygc::BitSet bitSet;
+  bitSet.safeSet({33, 62});
+  ASSERT_EQ(bitSet.isSet(2174), true);
 }

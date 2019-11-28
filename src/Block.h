@@ -11,34 +11,48 @@ class IBlock {
  public:
   virtual ~IBlock() = default;
   virtual std::pair<size_t, void *> getUnusedAndMark() = 0;
-  virtual void handleFinalizers() = 0;
   virtual void mark(size_t index) = 0;
+  virtual bool isMarked(size_t index) = 0;
+  virtual void onScanEnd() = 0;
 };
 
 template<size_t Size>
 class Block : public IBlock {
  private:
   typedef char SlotType[Size];
+  // copying happens at scanning time, the old generation need to find available room for objects copied from young, so
+// use a single set and set all to 0 before scanning is not acceptable.
+  BitSet *mNewSet;
   //current set is used to get definitely unused slot, it's "used" sets are not reliable, but "unused" sets are reliable
   BitSet *mCurrentSet;
   DynamicSlots<SlotType> mSlots;
  public:
-  Block() : mCurrentSet(new BitSet) {}
+  Block() : mCurrentSet(new BitSet), mNewSet(new BitSet) {}
   virtual ~Block() {
     delete (mCurrentSet);
+    delete (mNewSet);
   }
   std::pair<size_t, void *> getUnusedAndMark() override {
     auto coordinate = mCurrentSet->getUnset();
     auto index = coordinate.getIndex();
     auto *ptr = mSlots.safeGetSlot(index);
-    mCurrentSet->set(coordinate);
+    mCurrentSet->safeSet(coordinate);
+    mNewSet->safeSet(coordinate);
     return {index, ptr};
   }
-  void handleFinalizers() override {
-
+  bool isMarked(size_t index) override {
+    mCurrentSet->isSet(index);
   }
   void mark(size_t index) override {
-    mCurrentSet->set(index);
+    mCurrentSet->safeSet(index);
+    mNewSet->safeSet(index);
+  }
+  void onScanEnd() override {
+    // now new set is fully reliable, make it as current set;
+    auto *temp = mCurrentSet;
+    mCurrentSet = mNewSet;
+    mNewSet = mCurrentSet;
+    mNewSet->clear();
   }
 };
 } //namespace mygc

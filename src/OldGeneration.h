@@ -8,17 +8,19 @@
 
 #include "Block.h"
 #include "ObjectRecord.h"
+#include "FinalizerList.h"
 namespace mygc {
 class OldGeneration {
  public:
   OldGeneration();
-  OldRecord *copyToStopped(mygc::YoungRecord *from);
+  OldRecord *copyFromYoungSTW(mygc::YoungRecord *from);
   ~OldGeneration() {
     for (auto &block : mBlocks) {
       delete block;
     }
   }
-  void onScanBegin();
+  void onScanEnd();
+  void mark(OldRecord *record);
  private:
   IBlock *mBlocks[13]{
       nullptr,
@@ -35,9 +37,10 @@ class OldGeneration {
       new Block<(1 << 11)>,
       new Block<(1 << 12)>
   };
-  OldRecord *mLivingFinalizer;
-  OldRecord *mDeadFinalizer;
-  std::mutex mDeadFinalizerMutex;
+  FinalizerList mWhiteList;// objects with finalizer in this list are alive
+  FinalizerList mGrayList;// objects with finalizer in this list are alive
+  FinalizerList mBlackList;// objects with finalizer in this list are alive
+  std::mutex mBlackFinalizerMutex;
 };
 }
 

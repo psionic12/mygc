@@ -21,7 +21,7 @@ class BitSet {
   };
   typedef uint64_t ElementType;
   BitSet() = default;
-  BitSet(std::vector<ElementType>&& v);
+  BitSet(std::vector<ElementType> &&v);
   Coordinate getUnset();
   inline void set(const Coordinate &index) {
     mBitSet[index.group] |= kMask >> index.offset;
@@ -43,15 +43,16 @@ class BitSet {
   void setAll(const Coordinate &from, const Coordinate &to);
   BitSet XOR(const BitSet &set);
   const std::vector<ElementType> &data() const;
+  bool isSet(size_t index);
  private:
   static constexpr int kElementSize = sizeof(ElementType) * 8;
   static constexpr ElementType kMask = 1UL << (kElementSize - 1);
   std::vector<ElementType> mBitSet;
-  inline ElementType &getOrCreate(size_t index) {
-    if (mBitSet.size() <= index) {
-      mBitSet.resize(index + 1);
+  inline ElementType &getOrCreate(size_t groupId) {
+    if (mBitSet.size() <= groupId) {
+      mBitSet.resize(groupId + 1);
     }
-    return mBitSet[index];
+    return mBitSet[groupId];
   }
 };
 }//namespace mygc

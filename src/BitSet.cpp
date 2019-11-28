@@ -63,3 +63,6 @@ mygc::BitSet mygc::BitSet::XOR(const BitSet &set) {
   return BitSet(std::move(v3));
 }
 mygc::BitSet::BitSet(std::vector<mygc::BitSet::ElementType> &&v) : mBitSet(std::move(v)) {}
+bool mygc::BitSet::isSet(size_t index) {
+  return (mBitSet[index / kElementSize] & kMask >> index % kElementSize) != 0;
+}

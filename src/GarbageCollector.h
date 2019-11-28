@@ -18,7 +18,7 @@
 namespace mygc {
 class GarbageCollector {
  public:
-  YoungRecord * New(TypeDescriptor &descriptor);
+  YoungRecord *New(TypeDescriptor &descriptor);
   bool inHeap(void *ptr);
   void addRoots(GcReference *ptr);
   void removeRoots(GcReference *ptr);
@@ -35,6 +35,8 @@ class GarbageCollector {
   GarbageCollector();
   void stopTheWorldLocked();
   void restartTheWorldLocked();
+  void collectSTW();
+  Record *collectRecordSTW(Record *root);
   std::mutex mGcMutex;
   std::set<GcReference *> mGcRoots;
   std::set<pthread_t> mAttachedThreads;

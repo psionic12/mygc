@@ -10,15 +10,18 @@
 #include "IDescriptor.h"
 #include "TypeDescriptor.h"
 #include "ObjectRecord.h"
+#include "FinalizerList.h"
 namespace mygc {
 class YoungGeneration {
  public:
   YoungGeneration();
   mygc::YoungRecord * allocate(TypeDescriptor &descriptor);
-  YoungRecord *getFinalizerHeader() const;
+  FinalizerList& getFinalizerList() {
+    return mFinalizerList;
+  }
  private:
   Heap mHeap;
-  YoungRecord* mFinalizerHead;
+  FinalizerList mFinalizerList;
 };
 
 }//namespace mygc
