@@ -5,6 +5,8 @@
 #ifndef MYGC_OLDGENERATION_H
 #define MYGC_OLDGENERATION_H
 #include <mutex>
+#include <thread>
+#include <condition_variable>
 
 #include "Block.h"
 #include "ObjectRecord.h"
@@ -41,6 +43,9 @@ class OldGeneration {
   FinalizerList mGrayList;// objects with finalizer in this list are alive
   FinalizerList mBlackList;// objects with finalizer in this list are alive
   std::mutex mBlackFinalizerMutex;
+  std::thread mScavenger;
+  std::condition_variable mCV;
+  void scavenge();
 };
 }
 

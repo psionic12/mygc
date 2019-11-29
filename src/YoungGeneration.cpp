@@ -20,3 +20,6 @@ mygc::YoungRecord *mygc::YoungGeneration::allocate(mygc::TypeDescriptor &descrip
   }
   return record;
 }
+bool mygc::YoungGeneration::inHeapLocked(void *ptr) {
+  return mHeap.inHeapLocked(ptr);
+}

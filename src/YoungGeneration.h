@@ -19,6 +19,7 @@ class YoungGeneration {
   FinalizerList& getFinalizerList() {
     return mFinalizerList;
   }
+  bool inHeapLocked(void *ptr);
  private:
   Heap mHeap;
   FinalizerList mFinalizerList;

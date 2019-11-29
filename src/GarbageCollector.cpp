@@ -22,9 +22,9 @@ mygc::YoungRecord *mygc::GarbageCollector::New(TypeDescriptor &descriptor) {
   std::lock_guard<std::mutex> guard(mGcMutex);
   auto *ptr = mYoungGeneration->allocate(descriptor);
   if (!ptr) {
-    stop_the_world(mAttachedThreads);
-
-    restart_the_world();
+    stopTheWorldLocked();
+    collectSTW();
+    restartTheWorldLocked();
     ptr = mYoungGeneration->allocate(descriptor);
     if (!ptr) {
       throw std::runtime_error("mygc is out of memory");
@@ -87,7 +87,7 @@ mygc::Record *mygc::GarbageCollector::collectRecordSTW(Record *root) {
       if (!young->copied) {
         old = mOldGeneration.copyFromYoungSTW(young);
         young->copied = true;
-        if(young->descriptor->nonTrivial()) {
+        if (young->descriptor->nonTrivial()) {
           young->generation->getFinalizerList().remove(young);
         }
         young->forwardAddress = old;
@@ -123,6 +123,7 @@ mygc::Record *mygc::GarbageCollector::collectRecordSTW(Record *root) {
   return handledRecord;
 }
 void mygc::GarbageCollector::collectSTW() {
+  LOG(INFO) << "start collecting" << std::endl;
   for (auto *ref : mGcRoots) {
     auto *record = ref->getRecord();
     if (record) {
@@ -133,4 +134,8 @@ void mygc::GarbageCollector::collectSTW() {
   mOldGeneration.onScanEnd();
   mYoungPool.putDirtyGeneration(std::move(mYoungGeneration));
   mYoungGeneration = mYoungPool.getCleanGeneration();
+  LOG(INFO) << "collecting finished" << std::endl;
+}
+bool mygc::GarbageCollector::inHeap(void *ptr) {
+  return mYoungGeneration->inHeapLocked(ptr);
 }

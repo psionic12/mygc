@@ -24,7 +24,7 @@ mygc::OldRecord *mygc::OldGeneration::copyFromYoungSTW(YoungRecord *from) {
   }
   return record;
 }
-mygc::OldGeneration::OldGeneration() {}
+mygc::OldGeneration::OldGeneration() : mScavenger(&OldGeneration::scavenge, this) {}
 void mygc::OldGeneration::onScanEnd() {
   // first scan objects on mBlackList, these objects are unreachable objects but it's finalizer haven't be called yet
   std::unique_lock<std::mutex> lock(mBlackFinalizerMutex);
@@ -42,6 +42,8 @@ void mygc::OldGeneration::onScanEnd() {
     mBlackList.add(grayRecord);
     lock.unlock();
   }
+  // notify scavenger to work
+  mCV.notify_one();
   for (auto &block : mBlocks) {
     block->onScanEnd();
   }
@@ -57,5 +59,20 @@ void mygc::OldGeneration::mark(mygc::OldRecord *record) {
       mGrayList.remove(record);
       mWhiteList.add(record);
     }
+  }
+}
+void mygc::OldGeneration::scavenge() {
+  while (true) {
+    std::unique_lock<std::mutex> lock(mBlackFinalizerMutex);
+    auto *record = mBlackList.getHead();
+    if (!record) {
+      mCV.wait(lock);
+      record = mBlackList.getHead();
+    }
+    lock.unlock();
+    record->descriptor->callDestructor(((OldRecord *) record)->data);
+    lock.lock();
+    mBlackList.remove(record);
+    lock.unlock();
   }
 }

@@ -21,8 +21,8 @@ class YoungGenerationPool {
   std::condition_variable mCV;
   std::vector<std::unique_ptr<YoungGeneration>> mClean;
   std::vector<std::unique_ptr<YoungGeneration>> mDirty;
-  std::thread mFinalizer;
-  void finalize();
+  std::thread mScavenger;
+  void scavenge();
 };
 }//namespace mygc
 

@@ -3,7 +3,7 @@
 //
 
 #include "YoungGenerationPool.h"
-void mygc::YoungGenerationPool::finalize() {
+void mygc::YoungGenerationPool::scavenge() {
   while (true) {
     std::unique_ptr<YoungGeneration> generation = nullptr;
     std::unique_lock<std::mutex> lock(mMutex);
@@ -25,8 +25,8 @@ void mygc::YoungGenerationPool::finalize() {
     lock.unlock();
   }
 }
-mygc::YoungGenerationPool::YoungGenerationPool() : mFinalizer(&YoungGenerationPool::finalize, this) {
-  mFinalizer.detach();
+mygc::YoungGenerationPool::YoungGenerationPool() : mScavenger(&YoungGenerationPool::scavenge, this) {
+  mScavenger.detach();
 }
 void mygc::YoungGenerationPool::putDirtyGeneration(std::unique_ptr<mygc::YoungGeneration> &&generation) {
   std::unique_lock<std::mutex> lock(mMutex);
