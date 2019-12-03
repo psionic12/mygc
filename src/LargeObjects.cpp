@@ -4,7 +4,7 @@
 
 #include "LargeObjects.h"
 mygc::LargeRecord *mygc::LargeObjects::allocate(mygc::TypeDescriptor &descriptor) {
-  char *ptr = new char[sizeof(LargeRecord) + descriptor.typeSize()];
+  void *ptr = malloc(sizeof(LargeRecord) + descriptor.typeSize());
   auto *largeRecord = (LargeRecord *) ptr;
   largeRecord->location = Location::kLargeObjects;
   largeRecord->descriptor = &descriptor;
@@ -21,7 +21,10 @@ void mygc::LargeObjects::scavenge() {
       record = mBlackList.getHead();
     }
     lock.unlock();
-    record->descriptor->callDestructor(((OldRecord *) record)->data);
+    if (record->descriptor->nonTrivial()) {
+      record->descriptor->callDestructor(((OldRecord *) record)->data);
+    }
+    free(record);
     lock.lock();
     mBlackList.remove(record);
     lock.unlock();

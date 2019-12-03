@@ -27,10 +27,10 @@ class GarbageCollector {
   void detachThread(pthread_t thread);
   static GarbageCollector &getCollector();
   std::set<pthread_t> getAttachedThreads();
-  void registerType(size_t id,
-                    size_t typeSize,
-                    std::pair<const size_t, const std::vector<size_t>> &&indices,
-                    void (*destructor)(void *object) = nullptr);
+  void registeredType(size_t id,
+                      size_t typeSize,
+                      std::pair<const size_t, const std::vector<size_t>> &&indices,
+                      void (*destructor)(void *object) = nullptr);
   TypeDescriptor &getTypeById(size_t id);
  private:
   GarbageCollector();

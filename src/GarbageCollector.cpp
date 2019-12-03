@@ -64,10 +64,10 @@ std::set<pthread_t> mygc::GarbageCollector::getAttachedThreads() {
   std::lock_guard<std::mutex> guard(mGcMutex);
   return mAttachedThreads;
 }
-void mygc::GarbageCollector::registerType(size_t id,
-                                          size_t typeSize,
-                                          std::pair<const size_t, const std::vector<size_t>> &&indices,
-                                          void (*destructor)(void *)) {
+void mygc::GarbageCollector::registeredType(size_t id,
+                                            size_t typeSize,
+                                            std::pair<const size_t, const std::vector<size_t>> &&indices,
+                                            void (*destructor)(void *)) {
   std::lock_guard<std::mutex> guard(mGcMutex);
   try {
     mTypeMap.at(id);
