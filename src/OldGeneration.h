@@ -10,7 +10,7 @@
 
 #include "Block.h"
 #include "ObjectRecord.h"
-#include "FinalizerList.h"
+#include "RecordList.h"
 namespace mygc {
 class OldGeneration {
  public:
@@ -39,9 +39,9 @@ class OldGeneration {
       new Block<(1 << 11)>,
       new Block<(1 << 12)>
   };
-  FinalizerList mWhiteList;// objects with finalizer in this list are alive
-  FinalizerList mGrayList;// objects with finalizer in this list are alive
-  FinalizerList mBlackList;// objects with finalizer in this list are alive
+  NonTrivialList mWhiteList;// objects with finalizer in this list are alive
+  NonTrivialList mGrayList;// objects with finalizer in this list are alive
+  NonTrivialList mBlackList;// objects with finalizer in this list are alive
   std::mutex mBlackFinalizerMutex;
   std::thread mScavenger;
   std::condition_variable mCV;

@@ -19,7 +19,7 @@ class TypeDescriptor {
   std::pair<const size_t, const std::vector<size_t>> &getIndices() {
     return mIndices;
   }
-  void *callDestructor(Object *object) {
+  void callDestructor(Object *object) {
     mDestructor(object);
   }
   size_t typeSize() {

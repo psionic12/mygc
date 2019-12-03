@@ -11,7 +11,9 @@
 #define MYGC_STOP_SIGNAL SIGRTMIN + ('m' + 'y' + 'g' + 'c') % (SIGRTMAX - SIGRTMIN)
 #endif
 
-mygc::GarbageCollector::GarbageCollector() : mYoungGeneration(mYoungPool.getCleanGeneration()) {
+thread_local std::unique_ptr<mygc::YoungGeneration>
+    mygc::GarbageCollector::tYoungGeneration(mygc::GarbageCollector::getCollector().mYoungPool.getCleanGeneration());
+mygc::GarbageCollector::GarbageCollector() {
   stop_the_world_init();
   // initial glog
 //  google::InitGoogleLogging(nullptr);
@@ -20,12 +22,12 @@ mygc::GarbageCollector::GarbageCollector() : mYoungGeneration(mYoungPool.getClea
 
 mygc::YoungRecord *mygc::GarbageCollector::New(TypeDescriptor &descriptor) {
   std::lock_guard<std::mutex> guard(mGcMutex);
-  auto *ptr = mYoungGeneration->allocate(descriptor);
+  auto *ptr = tYoungGeneration->allocate(descriptor);
   if (!ptr) {
     stopTheWorldLocked();
     collectSTW();
     restartTheWorldLocked();
-    ptr = mYoungGeneration->allocate(descriptor);
+    ptr = tYoungGeneration->allocate(descriptor);
     if (!ptr) {
       throw std::runtime_error("mygc is out of memory");
     }
@@ -132,10 +134,10 @@ void mygc::GarbageCollector::collectSTW() {
     }
   }
   mOldGeneration.onScanEnd();
-  mYoungPool.putDirtyGeneration(std::move(mYoungGeneration));
-  mYoungGeneration = mYoungPool.getCleanGeneration();
+  mYoungPool.putDirtyGeneration(std::move(tYoungGeneration));
+  tYoungGeneration = mYoungPool.getCleanGeneration();
   LOG(INFO) << "collecting finished" << std::endl;
 }
 bool mygc::GarbageCollector::inHeap(void *ptr) {
-  return mYoungGeneration->inHeapLocked(ptr);
+  return tYoungGeneration->inHeapLocked(ptr);
 }

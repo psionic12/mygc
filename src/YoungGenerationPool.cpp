@@ -17,7 +17,7 @@ void mygc::YoungGenerationPool::scavenge() {
     auto *ptr = (YoungRecord *) generation->getFinalizerList().getHead();
     while (ptr) {
       ptr->descriptor->callDestructor(ptr->data);
-      ptr = (YoungRecord *) ptr->nextNonTrivial;
+      ptr = (YoungRecord *) ptr->nonTrivialNode.next;
     }
 
     lock.lock();

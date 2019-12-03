@@ -12,12 +12,16 @@ enum class Location {
   kOldGeneration,
   kLargeObjects,
 };
+class Record;
+struct NonTrivialNode {
+  Record *pre = nullptr;
+  Record *next = nullptr;
+};
 
 struct Record {
   Location location = Location::kYoungGeneration;
   TypeDescriptor *descriptor = nullptr;
-  Record *nextNonTrivial = nullptr;
-  Record *preNonTrivial = nullptr;
+  NonTrivialNode nonTrivialNode;
 };
 
 struct OldRecord : Record {
@@ -30,6 +34,17 @@ struct YoungRecord : Record {
   // if copied, this address is the new location in old generation
   OldRecord *forwardAddress = nullptr;
   YoungGeneration *generation = nullptr;
+  Object data[];
+};
+
+class LargeRecord;
+struct LargeRecordNode {
+  LargeRecord *pre = nullptr;
+  LargeRecord *next = nullptr;
+};
+
+struct LargeRecord : Record {
+  LargeRecordNode largeRecordNode;
   Object data[];
 };
 }

@@ -43,7 +43,7 @@ class GarbageCollector {
   std::map<size_t, TypeDescriptor> mTypeMap;
   OldGeneration mOldGeneration;
   YoungGenerationPool mYoungPool;
-  thread_local static std::unique_ptr<YoungGeneration> mYoungGeneration;
+  thread_local static std::unique_ptr<YoungGeneration> tYoungGeneration;
 };
 
 } //namespace mygc

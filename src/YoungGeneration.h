@@ -7,22 +7,21 @@
 
 #include <set>
 #include "Heap.h"
-#include "IDescriptor.h"
 #include "TypeDescriptor.h"
 #include "ObjectRecord.h"
-#include "FinalizerList.h"
+#include "RecordList.h"
 namespace mygc {
 class YoungGeneration {
  public:
   YoungGeneration();
-  mygc::YoungRecord * allocate(TypeDescriptor &descriptor);
-  FinalizerList& getFinalizerList() {
+  mygc::YoungRecord *allocate(TypeDescriptor &descriptor);
+  NonTrivialList &getFinalizerList() {
     return mFinalizerList;
   }
   bool inHeapLocked(void *ptr);
  private:
   Heap mHeap;
-  FinalizerList mFinalizerList;
+  NonTrivialList mFinalizerList;
 };
 
 }//namespace mygc
