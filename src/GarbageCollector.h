@@ -13,6 +13,7 @@
 #include "TypeDescriptor.h"
 #include "OldGeneration.h"
 #include "YoungGenerationPool.h"
+#include "LargeObjects.h"
 #include "GcReference.h"
 
 namespace mygc {
@@ -43,6 +44,7 @@ class GarbageCollector {
   std::map<size_t, TypeDescriptor> mTypeMap;
   OldGeneration mOldGeneration;
   YoungGenerationPool mYoungPool;
+  LargeObjects mLargeObjects;
   thread_local static std::unique_ptr<YoungGeneration> tYoungGeneration;
 };
 

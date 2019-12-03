@@ -39,9 +39,9 @@ class OldGeneration {
       new Block<(1 << 11)>,
       new Block<(1 << 12)>
   };
-  NonTrivialList mWhiteList;// objects with finalizer in this list are alive
-  NonTrivialList mGrayList;// objects with finalizer in this list are alive
-  NonTrivialList mBlackList;// objects with finalizer in this list are alive
+  OldNonTrivialList mWhiteList;// objects with finalizer in this list are alive
+  OldNonTrivialList mGrayList;// objects with finalizer in this list are alive
+  OldNonTrivialList mBlackList;// objects with finalizer in this list are alive
   std::mutex mBlackFinalizerMutex;
   std::thread mScavenger;
   std::condition_variable mCV;

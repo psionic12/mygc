@@ -13,23 +13,25 @@ enum class Location {
   kLargeObjects,
 };
 class Record;
+template<typename RecordType>
 struct NonTrivialNode {
-  Record *pre = nullptr;
-  Record *next = nullptr;
+  RecordType *pre = nullptr;
+  RecordType *next = nullptr;
 };
 
 struct Record {
   Location location = Location::kYoungGeneration;
   TypeDescriptor *descriptor = nullptr;
-  NonTrivialNode nonTrivialNode;
 };
 
 struct OldRecord : Record {
+  NonTrivialNode<OldRecord> nonTrivialNode;
   size_t index = 0;
   Object data[];
 };
 class YoungGeneration;
 struct YoungRecord : Record {
+  NonTrivialNode<YoungRecord> nonTrivialNode;
   bool copied = false;
   // if copied, this address is the new location in old generation
   OldRecord *forwardAddress = nullptr;
@@ -38,13 +40,13 @@ struct YoungRecord : Record {
 };
 
 class LargeRecord;
-struct LargeRecordNode {
+struct LargeListNode {
   LargeRecord *pre = nullptr;
   LargeRecord *next = nullptr;
 };
 
 struct LargeRecord : Record {
-  LargeRecordNode largeRecordNode;
+  LargeListNode largeListNode;
   Object data[];
 };
 }

@@ -8,7 +8,35 @@ mygc::LargeRecord *mygc::LargeObjects::allocate(mygc::TypeDescriptor &descriptor
   auto *largeRecord = (LargeRecord *) ptr;
   largeRecord->location = Location::kLargeObjects;
   largeRecord->descriptor = &descriptor;
-
-
-
+  mGrayList.add(largeRecord);
+  return largeRecord;
+}
+mygc::LargeObjects::LargeObjects() : mScavenger(&LargeObjects::scavenge, this) {}
+void mygc::LargeObjects::scavenge() {
+  while (true) {
+    std::unique_lock<std::mutex> lock(mBlackListMutex);
+    auto *record = mBlackList.getHead();
+    if (!record) {
+      mCV.wait(lock);
+      record = mBlackList.getHead();
+    }
+    lock.unlock();
+    record->descriptor->callDestructor(((OldRecord *) record)->data);
+    lock.lock();
+    mBlackList.remove(record);
+    lock.unlock();
+  }
+}
+void mygc::LargeObjects::onScanEnd() {
+  auto *record = mGrayList.getHead();
+  //TODO refactor RecordList to insert the whole chain
+  while (record) {
+    mGrayList.remove(record);
+    std::unique_lock<std::mutex> lock(mBlackListMutex);
+    mBlackList.add(record);
+  }
+}
+void mygc::LargeObjects::mark(mygc::LargeRecord *record) {
+  mGrayList.remove(record);
+  mWhiteList.add(record);
 }

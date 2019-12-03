@@ -53,6 +53,8 @@ class RecordList {
   RecordType *head = nullptr;
 };
 
-typedef RecordList<Record, NonTrivialNode, &Record::nonTrivialNode> NonTrivialList;
+typedef RecordList<YoungRecord, NonTrivialNode<YoungRecord>, &YoungRecord::nonTrivialNode> YoungNonTrivialList;
+typedef RecordList<OldRecord, NonTrivialNode<OldRecord>, &OldRecord::nonTrivialNode> OldNonTrivialList;
+typedef RecordList<LargeRecord, LargeListNode, &LargeRecord::largeListNode> LargeObjectList;
 }//namespace mygc
 #endif //MYGC_FINALIZERLIST_H

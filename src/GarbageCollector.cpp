@@ -106,6 +106,8 @@ mygc::Record *mygc::GarbageCollector::collectRecordSTW(Record *root) {
       break;
     }
     case Location::kLargeObjects: {
+      auto *large = (LargeRecord *) root;
+      mLargeObjects.mark(large);
       break;
     }
   }
@@ -134,6 +136,7 @@ void mygc::GarbageCollector::collectSTW() {
     }
   }
   mOldGeneration.onScanEnd();
+  mLargeObjects.onScanEnd();
   mYoungPool.putDirtyGeneration(std::move(tYoungGeneration));
   tYoungGeneration = mYoungPool.getCleanGeneration();
   LOG(INFO) << "collecting finished" << std::endl;

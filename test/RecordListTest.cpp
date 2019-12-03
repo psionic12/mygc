@@ -8,14 +8,14 @@
 class RecordListTest : public testing::Test {};
 
 TEST_F(RecordListTest, addTest) {
-  mygc::NonTrivialList list;
+  mygc::YoungNonTrivialList list;
   ASSERT_EQ(list.getHead(), nullptr);
-  mygc::Record record1;
+  mygc::YoungRecord record1;
   ASSERT_EQ(record1.nonTrivialNode.pre, nullptr);
   ASSERT_EQ(record1.nonTrivialNode.pre, nullptr);
   list.add(&record1);
   ASSERT_EQ(list.getHead(), &record1);
-  mygc::Record record2;
+  mygc::YoungRecord record2;
   list.add(&record2);
   ASSERT_EQ(list.getHead(), &record2);
   ASSERT_EQ(record1.nonTrivialNode.pre, &record2);
@@ -25,10 +25,10 @@ TEST_F(RecordListTest, addTest) {
 }
 
 TEST_F(RecordListTest, removeMiddleTest) {
-  mygc::NonTrivialList list;
-  mygc::Record record1;
-  mygc::Record record2;
-  mygc::Record record3;
+  mygc::YoungNonTrivialList list;
+  mygc::YoungRecord record1;
+  mygc::YoungRecord record2;
+  mygc::YoungRecord record3;
   list.add(&record3);
   list.add(&record2);
   list.add(&record1);
@@ -44,10 +44,10 @@ TEST_F(RecordListTest, removeMiddleTest) {
 }
 
 TEST_F(RecordListTest, removeTailTest) {
-  mygc::NonTrivialList list;
-  mygc::Record record1;
-  mygc::Record record2;
-  mygc::Record record3;
+  mygc::YoungNonTrivialList list;
+  mygc::YoungRecord record1;
+  mygc::YoungRecord record2;
+  mygc::YoungRecord record3;
   list.add(&record3);
   list.add(&record2);
   list.add(&record1);
@@ -63,10 +63,10 @@ TEST_F(RecordListTest, removeTailTest) {
 }
 
 TEST_F(RecordListTest, removeHeadTest) {
-  mygc::NonTrivialList list;
-  mygc::Record record1;
-  mygc::Record record2;
-  mygc::Record record3;
+  mygc::YoungNonTrivialList list;
+  mygc::YoungRecord record1;
+  mygc::YoungRecord record2;
+  mygc::YoungRecord record3;
   list.add(&record3);
   list.add(&record2);
   list.add(&record1);

@@ -15,13 +15,13 @@ class YoungGeneration {
  public:
   YoungGeneration();
   mygc::YoungRecord *allocate(TypeDescriptor &descriptor);
-  NonTrivialList &getFinalizerList() {
+  YoungNonTrivialList &getFinalizerList() {
     return mFinalizerList;
   }
   bool inHeapLocked(void *ptr);
  private:
   Heap mHeap;
-  NonTrivialList mFinalizerList;
+  YoungNonTrivialList mFinalizerList;
 };
 
 }//namespace mygc
