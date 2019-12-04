@@ -9,17 +9,17 @@
 #include <set>
 #include <condition_variable>
 
-#include "YoungGeneration.h"
 #include "TypeDescriptor.h"
 #include "OldGeneration.h"
 #include "YoungGenerationPool.h"
 #include "LargeObjects.h"
 #include "GcReference.h"
+#include "YoungGenerations.h"
 
 namespace mygc {
 class GarbageCollector {
  public:
-  YoungRecord *New(TypeDescriptor &descriptor);
+  YoungRecord *New(TypeDescriptor *descriptor);
   bool inHeap(void *ptr);
   void addRoots(GcReference *ptr);
   void removeRoots(GcReference *ptr);
@@ -31,7 +31,7 @@ class GarbageCollector {
                       size_t typeSize,
                       std::pair<const size_t, const std::vector<size_t>> &&indices,
                       void (*destructor)(void *object) = nullptr);
-  TypeDescriptor &getTypeById(size_t id);
+  TypeDescriptor * getTypeById(size_t id);
  private:
   GarbageCollector();
   void stopTheWorldLocked();
@@ -43,9 +43,8 @@ class GarbageCollector {
   std::set<pthread_t> mAttachedThreads;
   std::map<size_t, TypeDescriptor> mTypeMap;
   OldGeneration mOldGeneration;
-  YoungGenerationPool mYoungPool;
   LargeObjects mLargeObjects;
-  thread_local static std::unique_ptr<YoungGeneration> tYoungGeneration;
+  YoungGenerations mYoungGenerations;
 };
 
 } //namespace mygc

@@ -11,8 +11,6 @@
 #define MYGC_STOP_SIGNAL SIGRTMIN + ('m' + 'y' + 'g' + 'c') % (SIGRTMAX - SIGRTMIN)
 #endif
 
-thread_local std::unique_ptr<mygc::YoungGeneration>
-    mygc::GarbageCollector::tYoungGeneration(mygc::GarbageCollector::getCollector().mYoungPool.getCleanGeneration());
 mygc::GarbageCollector::GarbageCollector() {
   stop_the_world_init();
   // initial glog
@@ -20,14 +18,20 @@ mygc::GarbageCollector::GarbageCollector() {
   FLAGS_logtostderr = true;
 }
 
-mygc::YoungRecord *mygc::GarbageCollector::New(TypeDescriptor &descriptor) {
-  std::lock_guard<std::mutex> guard(mGcMutex);
-  auto *ptr = tYoungGeneration->allocate(descriptor);
+mygc::YoungRecord *mygc::GarbageCollector::New(TypeDescriptor *descriptor) {
+  auto *ptr = mYoungGenerations.getMine()->allocate(descriptor);
   if (!ptr) {
-    stopTheWorldLocked();
-    collectSTW();
-    restartTheWorldLocked();
-    ptr = tYoungGeneration->allocate(descriptor);
+    {
+      std::lock_guard<std::mutex> guard(mGcMutex);
+      // try again in case a gc has finished
+      ptr = mYoungGenerations.getMine()->allocate(descriptor);
+      if (!ptr) {
+        stopTheWorldLocked();
+        collectSTW();
+        restartTheWorldLocked();
+      }
+    }
+    ptr = mYoungGenerations.getMine()->allocate(descriptor);
     if (!ptr) {
       throw std::runtime_error("mygc is out of memory");
     }
@@ -75,10 +79,9 @@ void mygc::GarbageCollector::registeredType(size_t id,
     mTypeMap.insert({id, {typeSize, std::move(indices), destructor}});
   }
 }
-mygc::TypeDescriptor &mygc::GarbageCollector::getTypeById(size_t id) {
-  return mTypeMap.at(id);
+mygc::TypeDescriptor * mygc::GarbageCollector::getTypeById(size_t id) {
+  return &mTypeMap[id];
 }
-
 mygc::Record *mygc::GarbageCollector::collectRecordSTW(Record *root) {
   Object *data = nullptr;
   Record *handledRecord = nullptr;
@@ -137,10 +140,9 @@ void mygc::GarbageCollector::collectSTW() {
   }
   mOldGeneration.onScanEnd();
   mLargeObjects.onScanEnd();
-  mYoungPool.putDirtyGeneration(std::move(tYoungGeneration));
-  tYoungGeneration = mYoungPool.getCleanGeneration();
+  mYoungGenerations.onScanEnd();
   LOG(INFO) << "collecting finished" << std::endl;
 }
 bool mygc::GarbageCollector::inHeap(void *ptr) {
-  return tYoungGeneration->inHeapLocked(ptr);
+  return mYoungGenerations.getMine()->inHeapLocked(ptr);
 }

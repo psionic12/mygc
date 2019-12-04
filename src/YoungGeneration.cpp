@@ -8,14 +8,14 @@
 #define YOUNG_GENERATION_SIZE 2 << 12
 #endif
 mygc::YoungGeneration::YoungGeneration() : mHeap(YOUNG_GENERATION_SIZE) {}
-mygc::YoungRecord *mygc::YoungGeneration::allocate(mygc::TypeDescriptor &descriptor) {
-  auto *record = (YoungRecord *) mHeap.allocate(sizeof(YoungRecord) + descriptor.typeSize());
+mygc::YoungRecord *mygc::YoungGeneration::allocate(TypeDescriptor *descriptor) {
+  auto *record = (YoungRecord *) mHeap.allocate(sizeof(YoungRecord) + descriptor->typeSize());
   record->location = Location::kYoungGeneration;
-  record->descriptor = &descriptor;
+  record->descriptor = descriptor;
   record->copied = false;
   record->forwardAddress = nullptr;
   record->generation = this;
-  if (descriptor.nonTrivial()) {
+  if (descriptor->nonTrivial()) {
     mFinalizerList.add(record);
   }
   return record;

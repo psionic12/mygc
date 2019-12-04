@@ -12,6 +12,7 @@ namespace mygc {
 class Object {};
 class TypeDescriptor {
  public:
+  TypeDescriptor() = default;
   TypeDescriptor(size_t typeSize,
                  std::pair<const size_t, const std::vector<size_t>> &&indices,
                  void (*destructor)(void *object) = nullptr);

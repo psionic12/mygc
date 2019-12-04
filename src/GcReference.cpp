@@ -7,10 +7,15 @@
 #include "GcReference.h"
 #include "GarbageCollector.h"
 
+mygc::GcReference::GcReference() {
+  auto &collector = mygc::GarbageCollector::getCollector();
+  if (isRoot()) {
+    collector.addRoots(this);
+  }
+}
 mygc::GcReference::GcReference(size_t typeId) : GcReference() {
   auto &collector = mygc::GarbageCollector::getCollector();
-  auto &descriptor = collector.getTypeById(typeId);
-  mPtr = collector.New(descriptor);
+  mPtr = collector.New(collector.getTypeById(typeId));
 }
 void *mygc::GcReference::getReference() {
   if (mPtr->location == Location::kYoungGeneration) {
@@ -26,12 +31,6 @@ void mygc::GcReference::update(mygc::Record *newRecord) {
 }
 mygc::Record *mygc::GcReference::getRecord() {
   return mPtr;
-}
-mygc::GcReference::GcReference() {
-  auto &collector = mygc::GarbageCollector::getCollector();
-  if (isRoot()) {
-    collector.addRoots(this);
-  }
 }
 mygc::GcReference::~GcReference() {
   mPtr = nullptr;

@@ -12,11 +12,12 @@ namespace mygc {
 class Record;
 class GcReference {
  private:
+  // used to mark the start address of an object
+  static thread_local std::vector<void*> tBases;
   GcReference();
   Record *mPtr = nullptr;
  public:
   explicit GcReference(size_t typeId);
-  GcReference(size_t typeId, size_t typeSize);
   virtual ~GcReference();
   void *getReference();
   Record *getRecord();
