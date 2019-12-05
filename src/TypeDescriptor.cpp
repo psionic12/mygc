@@ -6,8 +6,9 @@
 #include "ObjectRecord.h"
 #include "Tools.h"
 mygc::TypeDescriptor::TypeDescriptor(size_t typeSize,
-                                     std::pair<const size_t, const std::vector<size_t>> &&indices,
-                                     void (*destructor)(void *))
-    : mTypeSize(typeSize), mIndices(std::move(indices)), mDestructor(destructor) {
+                                     std::pair<size_t, std::vector<size_t>> &&indices,
+                                     void (*destructor)(void *),
+                                     bool completed)
+    : mTypeSize(typeSize), mIndices(std::move(indices)), mDestructor(destructor), mCompleted(completed) {
   mBlockIndex = Tools::getLastOneFromRight(sizeof(OldRecord) + mTypeSize);
 }

@@ -26,12 +26,12 @@ class GarbageCollector {
   void attachThread(pthread_t thread);
   void detachThread(pthread_t thread);
   static GarbageCollector &getCollector();
-  std::set<pthread_t> getAttachedThreads();
   void registeredType(size_t id,
                       size_t typeSize,
-                      std::pair<const size_t, const std::vector<size_t>> &&indices,
-                      void (*destructor)(void *object) = nullptr);
-  TypeDescriptor * getTypeById(size_t id);
+                      std::pair<size_t, std::vector<size_t>> &&indices,
+                      void (*destructor)(void *object),
+                      bool completed);
+  TypeDescriptor *getTypeById(size_t id);
  private:
   GarbageCollector();
   void stopTheWorldLocked();
@@ -45,6 +45,10 @@ class GarbageCollector {
   OldGeneration mOldGeneration;
   LargeObjects mLargeObjects;
   YoungGenerations mYoungGenerations;
+ public:
+  //only used for testing
+  std::pair<size_t, std::vector<size_t>> getIndices(size_t typeId);
+  std::set<pthread_t> getAttachedThreads();
 };
 
 } //namespace mygc

@@ -7,15 +7,12 @@
 #include "GcReference.h"
 #include "GarbageCollector.h"
 
-mygc::GcReference::GcReference() {
-  auto &collector = mygc::GarbageCollector::getCollector();
-  if (isRoot()) {
-    collector.addRoots(this);
-  }
-}
-mygc::GcReference::GcReference(size_t typeId) : GcReference() {
+void mygc::GcReference::gcAlloca(size_t typeId) {
   auto &collector = mygc::GarbageCollector::getCollector();
   mPtr = collector.New(collector.getTypeById(typeId));
+}
+void mygc::GcReference::update(mygc::Record *newRecord) {
+  mPtr = newRecord;
 }
 void *mygc::GcReference::getReference() {
   if (mPtr->location == Location::kYoungGeneration) {
@@ -26,36 +23,49 @@ void *mygc::GcReference::getReference() {
     return ((LargeRecord *) mPtr)->data;
   }
 }
-void mygc::GcReference::update(mygc::Record *newRecord) {
-  mPtr = newRecord;
-}
 mygc::Record *mygc::GcReference::getRecord() {
   return mPtr;
 }
 mygc::GcReference::~GcReference() {
   mPtr = nullptr;
-  auto &collector = mygc::GarbageCollector::getCollector();
-  if (isRoot()) {
-    collector.removeRoots(this);
-  }
-}
-bool mygc::GcReference::isRoot() {
-  auto &collector = mygc::GarbageCollector::getCollector();
-  return !collector.inHeap(this);
 }
 void mygc::GcReference::registeredType(size_t typeId,
                                        size_t typeSize,
                                        std::pair<const size_t, const std::vector<size_t>> &&indices,
-                                       void (*destructor)(void *)) {
+                                       void (*destructor)(void *),
+                                       bool completed = true) {
   auto &collector = mygc::GarbageCollector::getCollector();
-  collector.registeredType(typeId, typeSize, std::move(indices), destructor);
+  collector.registeredType(typeId, typeSize, std::move(indices), destructor, completed);
 }
-bool mygc::GcReference::isRegistered(size_t typeId) {
+bool mygc::GcReference::isCompletedDescriptor(size_t typeId) {
   auto &collector = mygc::GarbageCollector::getCollector();
-  try {
-    collector.getTypeById(typeId);
-    return true;
-  } catch (const std::out_of_range &) {
-    return false;
-  }
+  return collector.getTypeById(typeId)->isCompleted();
+}
+bool mygc::GcReference::isInYoungGeneration(void *ptr) {
+  auto &collector = mygc::GarbageCollector::getCollector();
+  return collector.inHeap(ptr);
+}
+void mygc::GcReference::addRoots(mygc::GcReference *ptr) {
+  auto &collector = mygc::GarbageCollector::getCollector();
+  collector.addRoots(ptr);
+}
+void mygc::GcReference::removeRoots(mygc::GcReference *ptr) {
+  auto &collector = mygc::GarbageCollector::getCollector();
+  collector.removeRoots(ptr);
+}
+void mygc::GcReference::attachThread(pthread_t thread) {
+  auto &collector = mygc::GarbageCollector::getCollector();
+  collector.attachThread(thread);
+}
+void mygc::GcReference::detachThread(pthread_t thread) {
+  auto &collector = mygc::GarbageCollector::getCollector();
+  collector.detachThread(thread);
+}
+std::pair<size_t, std::vector<size_t>> mygc::GcReference::getIndices(size_t typeId) {
+  auto &collector = mygc::GarbageCollector::getCollector();
+  return collector.getIndices(typeId);
+}
+std::set<pthread_t> mygc::GcReference::getAttachedThreads() {
+  auto &collector = mygc::GarbageCollector::getCollector();
+  return collector.getAttachedThreads();
 }

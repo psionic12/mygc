@@ -6,7 +6,6 @@
 #define MYGC_YOUNGGENERATIONS_H
 
 #include <unordered_map>
-#include <thread>
 
 #include "YoungGeneration.h"
 #include "YoungGenerationPool.h"
@@ -16,7 +15,7 @@ class YoungGenerations {
   YoungGeneration *getMine();
   void onScanEnd();
  private:
-  std::unordered_map<std::thread::id, std::unique_ptr<YoungGeneration>> mAttachedYoungGenerations;
+  std::unordered_map<pthread_t, std::unique_ptr<YoungGeneration>> mAttachedYoungGenerations;
   YoungGenerationPool mYoungPool;
 };
 }//namespace mygc

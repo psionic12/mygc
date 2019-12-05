@@ -8,26 +8,36 @@
 #include <cstddef>
 #include <utility>
 #include <vector>
+#include <pthread.h>
+#include <set>
 namespace mygc {
 class Record;
 class GcReference {
  private:
-  // used to mark the start address of an object
-  static thread_local std::vector<void*> tBases;
-  GcReference();
   Record *mPtr = nullptr;
  public:
-  explicit GcReference(size_t typeId);
+  GcReference();
+  void gcAlloca(size_t typeId);
   virtual ~GcReference();
   void *getReference();
   Record *getRecord();
   void update(Record *newRecord);
-  bool isRoot();
+  bool isInYoungGeneration(void *ptr);
   static void registeredType(size_t typeId,
                              size_t typeSize,
                              std::pair<const size_t, const std::vector<size_t>> &&indices,
-                             void (*destructor)(void *object) = nullptr);
-  static bool isRegistered(size_t typeId);
+                             void (*destructor)(void *object),
+                             bool completed);
+
+  static bool isCompletedDescriptor(size_t typeId);
+  static void addRoots(GcReference *ptr);
+  static void removeRoots(GcReference *ptr);
+  static void attachThread(pthread_t thread);
+  static void detachThread(pthread_t thread);
+
+  // used for test
+  static std::pair<size_t, std::vector<size_t>> getIndices(size_t typeId);
+  static std::set<pthread_t> getAttachedThreads();
 };
 
 }//namespace mygc

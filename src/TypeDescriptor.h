@@ -12,12 +12,12 @@ namespace mygc {
 class Object {};
 class TypeDescriptor {
  public:
-  TypeDescriptor() = default;
   TypeDescriptor(size_t typeSize,
-                 std::pair<const size_t, const std::vector<size_t>> &&indices,
-                 void (*destructor)(void *object) = nullptr);
+                 std::pair<size_t, std::vector<size_t>> &&indices,
+                 void (*destructor)(void *object),
+                 bool completed);
   /// get positions of gc references in this type, pair.first > 1 means this is an array type
-  std::pair<const size_t, const std::vector<size_t>> &getIndices() {
+  std::pair<size_t, std::vector<size_t>> &getIndices() {
     return mIndices;
   }
   void callDestructor(Object *object) {
@@ -33,11 +33,15 @@ class TypeDescriptor {
   bool nonTrivial() {
     return mDestructor == nullptr;
   }
+  bool isCompleted() {
+    return mCompleted;
+  }
  private:
-  std::pair<const size_t, const std::vector<size_t>> mIndices;
+  std::pair<size_t, std::vector<size_t>> mIndices;
   void (*mDestructor)(void *object);
   size_t mTypeSize;
   int mBlockIndex;
+  bool mCompleted;
 };
 }//namespace mygc
 #endif //MYGC_TYPEDESCRIPTOR_H

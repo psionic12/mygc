@@ -4,7 +4,7 @@
 
 #include "YoungGenerations.h"
 mygc::YoungGeneration *mygc::YoungGenerations::getMine() {
-  static thread_local std::thread::id myId = std::this_thread::get_id();
+  static thread_local pthread_t myId = pthread_self();
   if (mAttachedYoungGenerations[myId] == nullptr) {
     mAttachedYoungGenerations[myId] = mYoungPool.getCleanGeneration();
   }

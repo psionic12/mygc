@@ -6,7 +6,7 @@
 #include <mutex>
 #include <gtest/gtest.h>
 
-#include "gc_ptr.h"
+#include "../headers/gc_ptr.h"
 class GcPtrThreadTest : public testing::Test {};
 
 std::mutex gMutex;
@@ -39,8 +39,8 @@ TEST_F(GcPtrThreadTest, threadTest) {
   sleep(2);
   {
     std::lock_guard<std::mutex> guard(gMutex);
-    ASSERT_EQ(gThreads, mygc::GarbageCollector::getCollector().getAttachedThreads());
-    ASSERT_EQ(gThreadCounts, mygc::GarbageCollector::getCollector().getAttachedThreads().size());
+    ASSERT_EQ(gThreads, mygc::GcReference::getAttachedThreads());
+    ASSERT_EQ(gThreadCounts, mygc::GcReference::getAttachedThreads().size());
     gStop = true;
   }
 }

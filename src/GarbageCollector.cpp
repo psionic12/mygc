@@ -70,17 +70,19 @@ std::set<pthread_t> mygc::GarbageCollector::getAttachedThreads() {
 }
 void mygc::GarbageCollector::registeredType(size_t id,
                                             size_t typeSize,
-                                            std::pair<const size_t, const std::vector<size_t>> &&indices,
-                                            void (*destructor)(void *)) {
+                                            std::pair<size_t, std::vector<size_t>> &&indices,
+                                            void (*destructor)(void *),
+                                            bool completed) {
   std::lock_guard<std::mutex> guard(mGcMutex);
   try {
-    mTypeMap.at(id);
+    auto &descriptor = mTypeMap.at(id);
+    descriptor = {typeSize, std::move(indices), destructor, completed};
   } catch (const std::out_of_range &) {
-    mTypeMap.insert({id, {typeSize, std::move(indices), destructor}});
+    mTypeMap.insert({id, {typeSize, std::move(indices), destructor, completed}});
   }
 }
-mygc::TypeDescriptor * mygc::GarbageCollector::getTypeById(size_t id) {
-  return &mTypeMap[id];
+mygc::TypeDescriptor *mygc::GarbageCollector::getTypeById(size_t id) {
+  return &mTypeMap.at(id);
 }
 mygc::Record *mygc::GarbageCollector::collectRecordSTW(Record *root) {
   Object *data = nullptr;
@@ -145,4 +147,9 @@ void mygc::GarbageCollector::collectSTW() {
 }
 bool mygc::GarbageCollector::inHeap(void *ptr) {
   return mYoungGenerations.getMine()->inHeapLocked(ptr);
+}
+std::pair<size_t, std::vector<size_t>> mygc::GarbageCollector::getIndices(size_t typeId) {
+  std::lock_guard<std::mutex> guard(mGcMutex);
+  auto &descriptor = mTypeMap.at(typeId);
+  return std::pair<size_t, std::vector<size_t>>(descriptor.getIndices());
 }
