@@ -20,6 +20,8 @@ class OldGeneration {
     for (auto &block : mBlocks) {
       delete block;
     }
+    mTerminate = true;
+    mCV.notify_all();
   }
   void onScanEnd();
   void mark(OldRecord *record);
@@ -42,6 +44,7 @@ class OldGeneration {
   OldNonTrivialList mWhiteList;// objects with finalizer in this list are alive
   OldNonTrivialList mGrayList;// objects with finalizer in this list are alive
   OldNonTrivialList mBlackList;// objects with finalizer in this list are alive
+  bool mTerminate;
   std::mutex mBlackFinalizerMutex;
   std::thread mScavenger;
   std::condition_variable mCV;

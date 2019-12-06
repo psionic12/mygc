@@ -7,17 +7,20 @@ void mygc::YoungGenerationPool::scavenge() {
   while (true) {
     std::unique_ptr<YoungGeneration> generation = nullptr;
     std::unique_lock<std::mutex> lock(mMutex);
-    if (mDirty.empty()) {
+    while (mDirty.empty()) {
       mCV.wait(lock);
+      if (mTerminate) {
+        return;
+      }
     }
     generation = std::move(mDirty.back());
     mDirty.pop_back();
     lock.unlock();
 
-    auto *ptr = (YoungRecord *) generation->getFinalizerList().getHead();
+    auto *ptr = generation->getFinalizerList().getHead();
     while (ptr) {
       ptr->descriptor->callDestructor(ptr->data);
-      ptr = (YoungRecord *) ptr->nonTrivialNode.next;
+      ptr = ptr->nonTrivialNode.next;
     }
 
     lock.lock();
@@ -25,7 +28,7 @@ void mygc::YoungGenerationPool::scavenge() {
     lock.unlock();
   }
 }
-mygc::YoungGenerationPool::YoungGenerationPool() : mScavenger(&YoungGenerationPool::scavenge, this) {
+mygc::YoungGenerationPool::YoungGenerationPool() : mScavenger(&YoungGenerationPool::scavenge, this), mTerminate(false) {
   mScavenger.detach();
 }
 void mygc::YoungGenerationPool::putDirtyGeneration(std::unique_ptr<mygc::YoungGeneration> &&generation) {
@@ -41,6 +44,6 @@ std::unique_ptr<mygc::YoungGeneration> mygc::YoungGenerationPool::getCleanGenera
     mClean.pop_back();
     return generation;
   } else {
-    return {};
+    return std::make_unique<YoungGeneration>();
   }
 }

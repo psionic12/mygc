@@ -31,7 +31,7 @@ TEST_F(GcPtrTest, correctnessTest) {
   Foo foo;
   auto ptr = mygc::make_gc<Foo>();
   auto v1 = mygc::GcReference::getIndices(typeid(Foo).hash_code()).second;
-  ASSERT_EQ(v1.size(), 8);
+  ASSERT_EQ(v1.size(), 7);
   std::vector<size_t> v2;
   v2.push_back((char *) &foo.p1 - (char *) &foo);
   v2.push_back((char *) &foo.p2 - (char *) &foo);

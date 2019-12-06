@@ -10,9 +10,17 @@
 #include <typeindex>
 #include <memory>
 #include <glog/logging.h>
-
 #include "GcReference.h"
 namespace mygc {
+class ThreadRegister {
+ public:
+  ThreadRegister() {
+    GcReference::attachThread(pthread_self());
+  }
+  ~ThreadRegister() {
+    GcReference::detachThread(pthread_self());
+  }
+};
 class AddressBase {
  public:
   static void push(void *base) {
@@ -49,25 +57,27 @@ template<typename T>
 class gc_ptr {
  public:
   gc_ptr() {
-    ptr = nullptr;
+    mThreadRegister;
     createIndices();
   }
-  explicit gc_ptr(T *t) {
-    ptr = t;
-    createIndices();
+  explicit gc_ptr(GcReference gcReference) : gc_ptr() {
+    mGcReference = gcReference;
   }
  private:
-  T *ptr;
+  GcReference mGcReference;
+  static thread_local ThreadRegister mThreadRegister;
   static TypeRegister<T> mTypeRegister;
   void createIndices() {
     mTypeRegister;
-    if (!AddressBase::empty()) {
+    if (!AddressBase::empty() && GcReference::isInYoungGeneration(this)) {
       AddressBase::back().second.push_back(this);
     }
   }
 };
 template<typename T>
 TypeRegister<T> gc_ptr<T>::mTypeRegister;
+template<typename T>
+thread_local ThreadRegister gc_ptr<T>::mThreadRegister;
 
 template<typename T>
 struct _MakeGc { typedef gc_ptr<T> __single_object; };
@@ -76,7 +86,9 @@ inline typename _MakeGc<T>::__single_object
 make_gc(_Args &&... __args) {
   auto typeId = typeid(T).hash_code();
   bool completed = GcReference::isCompletedDescriptor(typeId);
-  void *ptr = new char[sizeof(T)];
+  GcReference reference;
+  reference.gcAlloca(typeId);
+  void *ptr = reference.getReference();
   if (!completed) AddressBase::push(ptr);
   auto *t = new(ptr) T(std::forward<_Args>(__args)...);
   if (!completed) {
@@ -93,7 +105,7 @@ make_gc(_Args &&... __args) {
                                 true);
     AddressBase::pop();
   }
-  return gc_ptr<T>(t);
+  return gc_ptr<T>(reference);
 }
 
 //template<typename T, typename... Args, size_t SIZE>

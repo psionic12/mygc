@@ -11,13 +11,16 @@ mygc::LargeRecord *mygc::LargeObjects::allocate(mygc::TypeDescriptor &descriptor
   mGrayList.add(largeRecord);
   return largeRecord;
 }
-mygc::LargeObjects::LargeObjects() : mScavenger(&LargeObjects::scavenge, this) {}
+mygc::LargeObjects::LargeObjects() : mScavenger(&LargeObjects::scavenge, this), mTerminate(false) {
+  mScavenger.detach();
+}
 void mygc::LargeObjects::scavenge() {
   while (true) {
     std::unique_lock<std::mutex> lock(mBlackListMutex);
     auto *record = mBlackList.getHead();
-    if (!record) {
+    while (!record) {
       mCV.wait(lock);
+      if (mTerminate) return;
       record = mBlackList.getHead();
     }
     lock.unlock();

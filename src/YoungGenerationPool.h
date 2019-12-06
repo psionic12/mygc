@@ -14,10 +14,15 @@ namespace mygc {
 class YoungGenerationPool {
  public:
   YoungGenerationPool();
+  ~YoungGenerationPool() {
+    mTerminate = true;
+    mCV.notify_all();
+  }
   void putDirtyGeneration(std::unique_ptr<YoungGeneration> &&generation);
   std::unique_ptr<YoungGeneration> getCleanGeneration();
  private:
   std::mutex mMutex;
+  bool mTerminate;
   std::condition_variable mCV;
   std::vector<std::unique_ptr<YoungGeneration>> mClean;
   std::vector<std::unique_ptr<YoungGeneration>> mDirty;

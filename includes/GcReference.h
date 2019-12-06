@@ -16,13 +16,12 @@ class GcReference {
  private:
   Record *mPtr = nullptr;
  public:
-  GcReference();
   void gcAlloca(size_t typeId);
   virtual ~GcReference();
   void *getReference();
   Record *getRecord();
   void update(Record *newRecord);
-  bool isInYoungGeneration(void *ptr);
+  static bool isInYoungGeneration(void *ptr);
   static void registeredType(size_t typeId,
                              size_t typeSize,
                              std::pair<const size_t, const std::vector<size_t>> &&indices,

@@ -15,6 +15,10 @@ namespace mygc {
 class LargeObjects {
  public:
   LargeObjects();
+  ~LargeObjects() {
+    mTerminate = true;
+    mCV.notify_all();
+  }
   LargeRecord *allocate(TypeDescriptor &descriptor);
   void onScanEnd();
   void mark(LargeRecord *record);
@@ -23,6 +27,7 @@ class LargeObjects {
   LargeObjectList mGrayList;
   LargeObjectList mBlackList;
   std::mutex mBlackListMutex;
+  bool mTerminate;
   std::condition_variable mCV;
   std::thread mScavenger;
   void scavenge();
