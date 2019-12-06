@@ -49,6 +49,7 @@ class GarbageCollector {
   //only used for testing
   std::pair<size_t, std::vector<size_t>> getIndices(size_t typeId);
   std::set<pthread_t> getAttachedThreads();
+  std::set<GcReference *> getRoots();
 };
 
 } //namespace mygc

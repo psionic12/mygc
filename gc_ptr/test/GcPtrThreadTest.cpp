@@ -43,4 +43,11 @@ TEST_F(GcPtrThreadTest, threadTest) {
     ASSERT_EQ(gThreadCounts, mygc::GcReference::getAttachedThreads().size());
     gStop = true;
   }
+
+  sleep(2);
+  {
+    std::lock_guard<std::mutex> guard(gMutex);
+    ASSERT_EQ(std::set<pthread_t> {}, mygc::GcReference::getAttachedThreads());
+    ASSERT_EQ(0, mygc::GcReference::getAttachedThreads().size());
+  }
 }

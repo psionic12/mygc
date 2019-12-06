@@ -37,6 +37,7 @@ class GcReference {
   // used for test
   static std::pair<size_t, std::vector<size_t>> getIndices(size_t typeId);
   static std::set<pthread_t> getAttachedThreads();
+  static std::set<GcReference *> getRoots();
 };
 
 }//namespace mygc

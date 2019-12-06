@@ -153,3 +153,7 @@ std::pair<size_t, std::vector<size_t>> mygc::GarbageCollector::getIndices(size_t
   auto &descriptor = mTypeMap.at(typeId);
   return std::pair<size_t, std::vector<size_t>>(descriptor.getIndices());
 }
+std::set<mygc::GcReference *> mygc::GarbageCollector::getRoots() {
+  std::lock_guard<std::mutex> guard(mGcMutex);
+  return mGcRoots;
+}

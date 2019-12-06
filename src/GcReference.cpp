@@ -69,3 +69,7 @@ std::set<pthread_t> mygc::GcReference::getAttachedThreads() {
   auto &collector = mygc::GarbageCollector::getCollector();
   return collector.getAttachedThreads();
 }
+std::set<mygc::GcReference *> mygc::GcReference::getRoots() {
+  auto &collector = mygc::GarbageCollector::getCollector();
+  return collector.getRoots();
+}

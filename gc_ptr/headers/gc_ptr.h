@@ -58,7 +58,15 @@ class gc_ptr {
  public:
   gc_ptr() {
     mThreadRegister;
+    if (!GcReference::isInYoungGeneration(this)) {
+      GcReference::addRoots(&mGcReference);
+    }
     createIndices();
+  }
+  ~gc_ptr() {
+    if (!GcReference::isInYoungGeneration(this)) {
+      GcReference::removeRoots(&mGcReference);
+    }
   }
   explicit gc_ptr(GcReference gcReference) : gc_ptr() {
     mGcReference = gcReference;
