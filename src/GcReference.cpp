@@ -31,11 +31,11 @@ mygc::GcReference::~GcReference() {
 }
 void mygc::GcReference::registeredType(size_t typeId,
                                        size_t typeSize,
-                                       std::pair<const size_t, const std::vector<size_t>> &&indices,
+                                       std::vector<size_t> &&indices,
                                        void (*destructor)(void *),
                                        bool completed = true) {
   auto &collector = mygc::GarbageCollector::getCollector();
-  collector.registeredType(typeId, typeSize, std::move(indices), destructor, completed);
+  collector.registerType(typeId, typeSize, std::move(indices), destructor, completed);
 }
 bool mygc::GcReference::isCompletedDescriptor(size_t typeId) {
   auto &collector = mygc::GarbageCollector::getCollector();
@@ -61,7 +61,7 @@ void mygc::GcReference::detachThread(pthread_t thread) {
   auto &collector = mygc::GarbageCollector::getCollector();
   collector.detachThread(thread);
 }
-std::pair<size_t, std::vector<size_t>> mygc::GcReference::getIndices(size_t typeId) {
+std::vector<size_t> mygc::GcReference::getIndices(size_t typeId) {
   auto &collector = mygc::GarbageCollector::getCollector();
   return collector.getIndices(typeId);
 }

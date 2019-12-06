@@ -18,7 +18,7 @@ mygc::GarbageCollector::GarbageCollector() {
   FLAGS_logtostderr = true;
 }
 
-mygc::YoungRecord *mygc::GarbageCollector::New(TypeDescriptor *descriptor) {
+mygc::YoungRecord *mygc::GarbageCollector::New(ITypeDescriptor *descriptor) {
   auto *ptr = mYoungGenerations.getMine()->allocate(descriptor);
   if (!ptr) {
     {
@@ -68,21 +68,31 @@ std::set<pthread_t> mygc::GarbageCollector::getAttachedThreads() {
   std::lock_guard<std::mutex> guard(mGcMutex);
   return mAttachedThreads;
 }
-void mygc::GarbageCollector::registeredType(size_t id,
-                                            size_t typeSize,
-                                            std::pair<size_t, std::vector<size_t>> &&indices,
-                                            void (*destructor)(void *),
-                                            bool completed) {
+void mygc::GarbageCollector::registerType(size_t id,
+                                          size_t typeSize,
+                                          std::vector<size_t> &&indices,
+                                          void (*destructor)(void *),
+                                          bool completed) {
   std::lock_guard<std::mutex> guard(mGcMutex);
+  auto p = std::make_unique<SingleType>(typeSize, std::move(indices), destructor, completed);
   try {
     auto &descriptor = mTypeMap.at(id);
-    descriptor = {typeSize, std::move(indices), destructor, completed};
+    descriptor = std::move(p);
   } catch (const std::out_of_range &) {
-    mTypeMap.insert({id, {typeSize, std::move(indices), destructor, completed}});
+    mTypeMap.insert({id, std::move(p)});
   }
 }
-mygc::TypeDescriptor *mygc::GarbageCollector::getTypeById(size_t id) {
-  return &mTypeMap.at(id);
+void mygc::GarbageCollector::registerType(size_t id, size_t typeSize, size_t elementType, size_t counts) {
+  auto p = std::make_unique<ArrayType>(typeSize,  getTypeById(elementType), counts);
+  try {
+    auto &descriptor = mTypeMap.at(id);
+    descriptor = std::move(p);
+  } catch (const std::out_of_range &) {
+    mTypeMap.insert({id, std::move(p)});
+  }
+}
+mygc::ITypeDescriptor *mygc::GarbageCollector::getTypeById(size_t id) {
+  return mTypeMap.at(id).get();
 }
 mygc::Record *mygc::GarbageCollector::collectRecordSTW(Record *root) {
   Object *data = nullptr;
@@ -148,10 +158,14 @@ void mygc::GarbageCollector::collectSTW() {
 bool mygc::GarbageCollector::inHeap(void *ptr) {
   return mYoungGenerations.getMine()->inHeapLocked(ptr);
 }
-std::pair<size_t, std::vector<size_t>> mygc::GarbageCollector::getIndices(size_t typeId) {
+std::vector<size_t> mygc::GarbageCollector::getIndices(size_t typeId) {
   std::lock_guard<std::mutex> guard(mGcMutex);
-  auto &descriptor = mTypeMap.at(typeId);
-  return std::pair<size_t, std::vector<size_t>>(descriptor.getIndices());
+  auto *descriptor = mTypeMap.at(typeId).get();
+  if (auto *singleType = dynamic_cast<SingleType *>(descriptor)) {
+    return singleType->getIndices();
+  } else {
+    throw std::runtime_error("get indices for an array type");
+  }
 }
 std::set<mygc::GcReference *> mygc::GarbageCollector::getRoots() {
   std::lock_guard<std::mutex> guard(mGcMutex);

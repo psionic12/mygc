@@ -10,19 +10,11 @@
 namespace mygc {
 //no use, just for type safe;
 class Object {};
-class TypeDescriptor {
+
+class ITypeDescriptor {
  public:
-  TypeDescriptor(size_t typeSize,
-                 std::pair<size_t, std::vector<size_t>> &&indices,
-                 void (*destructor)(void *object),
-                 bool completed);
-  /// get positions of gc references in this type, pair.first > 1 means this is an array type
-  std::pair<size_t, std::vector<size_t>> &getIndices() {
-    return mIndices;
-  }
-  void callDestructor(Object *object) {
-    mDestructor(object);
-  }
+  ITypeDescriptor(size_t typeSize, bool completed);
+  virtual ~ITypeDescriptor() = default;
   size_t typeSize() {
     return mTypeSize;
   }
@@ -30,18 +22,49 @@ class TypeDescriptor {
   int getBlockIndex() {
     return mBlockIndex;
   }
-  bool nonTrivial() {
-    return mDestructor == nullptr;
-  }
   bool isCompleted() {
     return mCompleted;
   }
- private:
-  std::pair<size_t, std::vector<size_t>> mIndices;
-  void (*mDestructor)(void *object);
+  virtual bool nonTrivial() = 0;
+  virtual void callDestructor(Object *object) = 0;
+ protected:
   size_t mTypeSize;
-  int mBlockIndex;
   bool mCompleted;
+  int mBlockIndex;
+};
+class SingleType : public ITypeDescriptor {
+ public:
+  SingleType(size_t typeSize,
+             std::vector<size_t> &&indices,
+             void (*destructor)(void *object),
+             bool completed);
+  std::vector<size_t> &getIndices() {
+    return mIndices;
+  }
+  bool nonTrivial() override {
+    return mDestructor == nullptr;
+  }
+  void callDestructor(Object *object) override {
+    mDestructor(object);
+  }
+ private:
+  void (*mDestructor)(void *object);
+  std::vector<size_t> mIndices;
+};
+class ArrayType : public ITypeDescriptor {
+ public:
+  ArrayType(size_t typeSize, ITypeDescriptor *elementType, size_t counts);
+  ITypeDescriptor *getElementId() {
+    return mElementType;
+  }
+  size_t getCounts() {
+    return mCounts;
+  }
+  void callDestructor(Object *object) override;
+ private:
+  bool nonTrivial() override;
+  ITypeDescriptor *mElementType;
+  size_t mCounts;
 };
 }//namespace mygc
 #endif //MYGC_TYPEDESCRIPTOR_H

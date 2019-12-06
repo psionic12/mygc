@@ -19,7 +19,7 @@ class LargeObjects {
     mTerminate = true;
     mCV.notify_all();
   }
-  LargeRecord *allocate(TypeDescriptor &descriptor);
+  LargeRecord *allocate(ITypeDescriptor *descriptor);
   void onScanEnd();
   void mark(LargeRecord *record);
  private:

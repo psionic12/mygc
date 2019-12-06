@@ -3,11 +3,11 @@
 //
 
 #include "LargeObjects.h"
-mygc::LargeRecord *mygc::LargeObjects::allocate(mygc::TypeDescriptor &descriptor) {
-  void *ptr = malloc(sizeof(LargeRecord) + descriptor.typeSize());
+mygc::LargeRecord *mygc::LargeObjects::allocate(mygc::ITypeDescriptor *descriptor) {
+  void *ptr = malloc(sizeof(LargeRecord) + descriptor->typeSize());
   auto *largeRecord = (LargeRecord *) ptr;
   largeRecord->location = Location::kLargeObjects;
-  largeRecord->descriptor = &descriptor;
+  largeRecord->descriptor = descriptor;
   mGrayList.add(largeRecord);
   return largeRecord;
 }

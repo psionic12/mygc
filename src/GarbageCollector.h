@@ -19,19 +19,20 @@
 namespace mygc {
 class GarbageCollector {
  public:
-  YoungRecord *New(TypeDescriptor *descriptor);
+  YoungRecord *New(ITypeDescriptor *descriptor);
   bool inHeap(void *ptr);
   void addRoots(GcReference *ptr);
   void removeRoots(GcReference *ptr);
   void attachThread(pthread_t thread);
   void detachThread(pthread_t thread);
   static GarbageCollector &getCollector();
-  void registeredType(size_t id,
-                      size_t typeSize,
-                      std::pair<size_t, std::vector<size_t>> &&indices,
-                      void (*destructor)(void *object),
-                      bool completed);
-  TypeDescriptor *getTypeById(size_t id);
+  void registerType(size_t id,
+                    size_t typeSize,
+                    std::vector<size_t> &&indices,
+                    void (*destructor)(void *object),
+                    bool completed);
+  void registerType(size_t id, size_t typeSize, size_t elementType, size_t counts);
+  ITypeDescriptor *getTypeById(size_t id);
  private:
   GarbageCollector();
   void stopTheWorldLocked();
@@ -41,13 +42,13 @@ class GarbageCollector {
   std::mutex mGcMutex;
   std::set<GcReference *> mGcRoots;
   std::set<pthread_t> mAttachedThreads;
-  std::map<size_t, TypeDescriptor> mTypeMap;
+  std::map<size_t, std::unique_ptr<ITypeDescriptor>> mTypeMap;
   OldGeneration mOldGeneration;
   LargeObjects mLargeObjects;
   YoungGenerations mYoungGenerations;
  public:
   //only used for testing
-  std::pair<size_t, std::vector<size_t>> getIndices(size_t typeId);
+  std::vector<size_t> getIndices(size_t typeId);
   std::set<pthread_t> getAttachedThreads();
   std::set<GcReference *> getRoots();
 };

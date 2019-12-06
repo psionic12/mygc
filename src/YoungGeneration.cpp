@@ -8,7 +8,7 @@
 #define YOUNG_GENERATION_SIZE 2 << 12
 #endif
 mygc::YoungGeneration::YoungGeneration() : mHeap(YOUNG_GENERATION_SIZE) {}
-mygc::YoungRecord *mygc::YoungGeneration::allocate(TypeDescriptor *descriptor) {
+mygc::YoungRecord *mygc::YoungGeneration::allocate(ITypeDescriptor *descriptor) {
   auto *record = (YoungRecord *) mHeap.allocate(sizeof(YoungRecord) + descriptor->typeSize());
   record->location = Location::kYoungGeneration;
   record->descriptor = descriptor;

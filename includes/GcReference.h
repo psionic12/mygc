@@ -24,7 +24,7 @@ class GcReference {
   static bool isInYoungGeneration(void *ptr);
   static void registeredType(size_t typeId,
                              size_t typeSize,
-                             std::pair<const size_t, const std::vector<size_t>> &&indices,
+                             std::vector<size_t> &&indices,
                              void (*destructor)(void *object),
                              bool completed);
 
@@ -35,7 +35,7 @@ class GcReference {
   static void detachThread(pthread_t thread);
 
   // used for test
-  static std::pair<size_t, std::vector<size_t>> getIndices(size_t typeId);
+  static std::vector<size_t> getIndices(size_t typeId);
   static std::set<pthread_t> getAttachedThreads();
   static std::set<GcReference *> getRoots();
 };
