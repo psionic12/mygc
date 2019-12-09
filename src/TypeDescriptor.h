@@ -54,7 +54,7 @@ class SingleType : public ITypeDescriptor {
 class ArrayType : public ITypeDescriptor {
  public:
   ArrayType(size_t typeSize, ITypeDescriptor *elementType, size_t counts);
-  ITypeDescriptor *getElementId() {
+  ITypeDescriptor *getElementType() {
     return mElementType;
   }
   size_t getCounts() {

@@ -39,6 +39,8 @@ class GarbageCollector {
   void restartTheWorldLocked();
   void collectSTW();
   Record *collectRecordSTW(Record *root);
+  void iterateChildren(mygc::SingleType *childType, Object *data);
+  void iterateArray(mygc::ArrayType* arrayType, Object *data);
   std::mutex mGcMutex;
   std::set<GcReference *> mGcRoots;
   std::set<pthread_t> mAttachedThreads;

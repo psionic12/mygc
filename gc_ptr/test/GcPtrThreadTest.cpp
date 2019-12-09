@@ -39,15 +39,20 @@ TEST_F(GcPtrThreadTest, threadTest) {
   sleep(2);
   {
     std::lock_guard<std::mutex> guard(gMutex);
-    ASSERT_EQ(gThreads, mygc::GcReference::getAttachedThreads());
-    ASSERT_EQ(gThreadCounts, mygc::GcReference::getAttachedThreads().size());
+    auto attached = mygc::GcReference::getAttachedThreads();
+    for (auto& element: gThreads) {
+      ASSERT_NE(attached.find(element), attached.end());
+    }
     gStop = true;
   }
 
   sleep(2);
   {
     std::lock_guard<std::mutex> guard(gMutex);
-    ASSERT_EQ(std::set<pthread_t> {}, mygc::GcReference::getAttachedThreads());
-    ASSERT_EQ(0, mygc::GcReference::getAttachedThreads().size());
+    auto attached = mygc::GcReference::getAttachedThreads();
+    for (auto& element: gThreads) {
+      ASSERT_EQ(attached.find(element), attached.end());
+    }
+
   }
 }

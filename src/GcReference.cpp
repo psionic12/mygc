@@ -37,6 +37,11 @@ void mygc::GcReference::registeredType(size_t typeId,
   auto &collector = mygc::GarbageCollector::getCollector();
   collector.registerType(typeId, typeSize, std::move(indices), destructor, completed);
 }
+
+void mygc::GcReference::registerType(size_t id, size_t typeSize, size_t elementType, size_t counts) {
+  auto &collector = mygc::GarbageCollector::getCollector();
+  collector.registerType(id, typeSize, elementType, counts);
+}
 bool mygc::GcReference::isCompletedDescriptor(size_t typeId) {
   auto &collector = mygc::GarbageCollector::getCollector();
   return collector.getTypeById(typeId)->isCompleted();

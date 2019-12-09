@@ -10,18 +10,19 @@
 #include <typeindex>
 #include <memory>
 #include <glog/logging.h>
+#include <type_traits>
 #include "GcReference.h"
 namespace mygc {
-class ThreadRegister {
+class _ThreadRegister {
  public:
-  ThreadRegister() {
+  _ThreadRegister() {
     GcReference::attachThread(pthread_self());
   }
-  ~ThreadRegister() {
+  ~_ThreadRegister() {
     GcReference::detachThread(pthread_self());
   }
 };
-class AddressBase {
+class _AddressBase {
  public:
   static void push(void *base) {
     getBases().push_back({base, {}});
@@ -41,19 +42,19 @@ class AddressBase {
     return v;
   }
 };
-template<typename T>
-class TypeRegister {
+template<typename _Tp>
+class _TypeRegister {
  public:
-  TypeRegister() {
-    size_t typeId = typeid(T).hash_code();
-    GcReference::registeredType(typeId, sizeof(T), {}, &TypeRegister::destruct, false);
+  _TypeRegister() {
+    size_t typeId = typeid(_Tp).hash_code();
+    GcReference::registeredType(typeId, sizeof(_Tp), {}, &_TypeRegister::destruct, false);
   }
   static void destruct(void *t) {
-    ((T *) t)->~T();
+    ((_Tp *) t)->~_Tp();
   }
 };
 
-template<typename T>
+template<typename _Tp>
 class gc_ptr {
  public:
   gc_ptr() {
@@ -73,59 +74,50 @@ class gc_ptr {
   }
  private:
   GcReference mGcReference;
-  static thread_local ThreadRegister mThreadRegister;
-  static TypeRegister<T> mTypeRegister;
+  static thread_local _ThreadRegister mThreadRegister;
+  static _TypeRegister<_Tp> mTypeRegister;
   void createIndices() {
     mTypeRegister;
-    if (!AddressBase::empty() && GcReference::isInYoungGeneration(this)) {
-      AddressBase::back().second.push_back(this);
+    if (!_AddressBase::empty() && GcReference::isInYoungGeneration(this)) {
+      _AddressBase::back().second.push_back(this);
     }
   }
 };
-template<typename T>
-TypeRegister<T> gc_ptr<T>::mTypeRegister;
-template<typename T>
-thread_local ThreadRegister gc_ptr<T>::mThreadRegister;
+template<typename _Tp>
+_TypeRegister<_Tp> gc_ptr<_Tp>::mTypeRegister;
+template<typename _Tp>
+thread_local _ThreadRegister gc_ptr<_Tp>::mThreadRegister;
 
-template<typename T>
-struct _MakeGc { typedef gc_ptr<T> __single_object; };
-template<typename T, typename... _Args>
-inline typename _MakeGc<T>::__single_object
+template<typename _Tp>
+struct _MakeGc { typedef gc_ptr<_Tp> __single_object; };
+template<typename _Tp>
+struct _MakeGc<_Tp[]> { typedef gc_ptr<_Tp[]> __array; };
+template<typename _Tp, typename... _Args>
+inline typename _MakeGc<_Tp>::__single_object
 make_gc(_Args &&... __args) {
-  auto typeId = typeid(T).hash_code();
+  auto typeId = typeid(_Tp).hash_code();
   bool completed = GcReference::isCompletedDescriptor(typeId);
   GcReference reference;
   reference.gcAlloca(typeId);
   void *ptr = reference.getReference();
-  if (!completed) AddressBase::push(ptr);
-  auto *t = new(ptr) T(std::forward<_Args>(__args)...);
+  if (!completed) _AddressBase::push(ptr);
+  auto *t = new(ptr) _Tp(std::forward<_Args>(__args)...);
   if (!completed) {
-    auto &pair = AddressBase::back();
+    auto &pair = _AddressBase::back();
     void *base = pair.first;
     std::vector<size_t> offsets;
     for (auto *child : pair.second) {
       offsets.push_back((char *) child - (char *) base);
     }
     GcReference::registeredType(typeId,
-                                sizeof(T),
-                                {1, std::move(offsets)},
-                                &TypeRegister<T>::destruct,
+                                sizeof(_Tp),
+                                std::move(offsets),
+                                &_TypeRegister<_Tp>::destruct,
                                 true);
-    AddressBase::pop();
+    _AddressBase::pop();
   }
-  return gc_ptr<T>(reference);
+  return gc_ptr<_Tp>(reference);
 }
-
-//template<typename T, typename... Args, size_t SIZE>
-//class gc_ptr<T[SIZE], Args...> : GcReference {
-// public:
-//  gc_ptr(Args &&... args) {
-//    auto ptr = new(getReference()) T[SIZE]{std::forward<Args>(args)...};
-//  }
-// private:
-//  static CppClassRegister<T> mRegister;
-//};
-
 }//namespace mygc
 
 #endif //MYGC_GC_PTR_H

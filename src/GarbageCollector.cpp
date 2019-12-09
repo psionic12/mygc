@@ -83,7 +83,7 @@ void mygc::GarbageCollector::registerType(size_t id,
   }
 }
 void mygc::GarbageCollector::registerType(size_t id, size_t typeSize, size_t elementType, size_t counts) {
-  auto p = std::make_unique<ArrayType>(typeSize,  getTypeById(elementType), counts);
+  auto p = std::make_unique<ArrayType>(typeSize, getTypeById(elementType), counts);
   try {
     auto &descriptor = mTypeMap.at(id);
     descriptor = std::move(p);
@@ -126,20 +126,39 @@ mygc::Record *mygc::GarbageCollector::collectRecordSTW(Record *root) {
       break;
     }
   }
-  // handle children
-  const auto &pair = handledRecord->descriptor->getIndices();
-  size_t group = pair.first; // big than 1 if it is an array
-  const std::vector<size_t> &indices = pair.second;
-  //OPT: most objects are not arrays
-  for (int i = 0; i < group; i++) {
-    auto *arrayData = data + i;
-    for (auto index : indices) {
-      auto *ref = (GcReference *) (arrayData + index);
-      auto *childHandledRecord = collectRecordSTW(ref->getRecord());
-      ref->update(childHandledRecord);
+
+  auto *descriptor = handledRecord->descriptor;
+  if (auto *singleType = dynamic_cast<SingleType *>(descriptor)) {
+    iterateChildren(singleType, data);
+  } else if (auto *arrayType = dynamic_cast<ArrayType *>(descriptor)) {
+    iterateArray(arrayType, data);
+  } else {
+    throw std::runtime_error("unknown type");
+  }
+
+  return handledRecord;
+}
+void mygc::GarbageCollector::iterateChildren(mygc::SingleType *childType, Object *data) {
+  const auto &indices = childType->getIndices();
+  for (auto index : indices) {
+    auto *ref = (GcReference *) (data + index);
+    auto *childHandledRecord = collectRecordSTW(ref->getRecord());
+    ref->update(childHandledRecord);
+  }
+}
+void mygc::GarbageCollector::iterateArray(mygc::ArrayType *arrayType, mygc::Object *data) {
+  auto counts = arrayType->getCounts();
+  for (int i = 0; i < counts; i++) {
+    Object *childData = data + i * arrayType->typeSize();
+    auto *elementType = arrayType->getElementType();
+    if (auto *singleType = dynamic_cast<SingleType *>(elementType)) {
+      iterateChildren(singleType, childData);
+    } else if (auto *childArrayType = dynamic_cast<ArrayType *>(elementType)) {
+      iterateArray(childArrayType, childData);
+    } else {
+      throw std::runtime_error("unknown type");
     }
   }
-  return handledRecord;
 }
 void mygc::GarbageCollector::collectSTW() {
   LOG(INFO) << "start collecting" << std::endl;
