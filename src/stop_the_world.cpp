@@ -46,7 +46,7 @@ void stop_the_world(const std::set<pthread_t> &threads) {
       LOG(INFO) << "waiting for threads to stop";
       sAcknowledgeCondition.wait(lk);
     } else {
-      LOG(INFO) << "all thread is already stopped";
+//      LOG(INFO) << "all thread is already stopped";
     }
   }
 }

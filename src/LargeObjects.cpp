@@ -46,3 +46,7 @@ void mygc::LargeObjects::mark(mygc::LargeRecord *record) {
   mGrayList.remove(record);
   mWhiteList.add(record);
 }
+mygc::LargeObjects::~LargeObjects() {
+  mTerminate = true;
+  mCV.notify_all();
+}

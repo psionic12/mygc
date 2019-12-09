@@ -19,6 +19,8 @@ class YoungGeneration {
     return mFinalizerList;
   }
   bool inHeapLocked(void *ptr);
+  void reset();
+  static size_t defaultSize();
  private:
   Heap mHeap;
   YoungNonTrivialList mFinalizerList;

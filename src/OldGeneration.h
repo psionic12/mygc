@@ -16,13 +16,7 @@ class OldGeneration {
  public:
   OldGeneration();
   OldRecord *copyFromYoungSTW(mygc::YoungRecord *from);
-  ~OldGeneration() {
-    for (auto &block : mBlocks) {
-      delete block;
-    }
-    mTerminate = true;
-    mCV.notify_all();
-  }
+  ~OldGeneration();
   void onScanEnd();
   void mark(OldRecord *record);
  private:

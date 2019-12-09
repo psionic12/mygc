@@ -42,11 +42,15 @@ class SingleType : public ITypeDescriptor {
     return mIndices;
   }
   bool nonTrivial() override {
-    return mDestructor == nullptr;
+    return mDestructor != nullptr;
   }
   void callDestructor(Object *object) override {
-    mDestructor(object);
+    if (mDestructor) mDestructor(object);
   }
+  void update(size_t typeSize,
+              std::vector<size_t> &&indices,
+              void (*destructor)(void *object),
+              bool completed);
  private:
   void (*mDestructor)(void *object);
   std::vector<size_t> mIndices;
@@ -61,6 +65,7 @@ class ArrayType : public ITypeDescriptor {
     return mCounts;
   }
   void callDestructor(Object *object) override;
+  void update(size_t typeSize, ITypeDescriptor *elementType, size_t counts);
  private:
   bool nonTrivial() override;
   ITypeDescriptor *mElementType;

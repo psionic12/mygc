@@ -1,7 +1,7 @@
 //
 // Created by liu on 19-11-26.
 //
-
+#include <glog/logging.h>
 #include "YoungGenerationPool.h"
 void mygc::YoungGenerationPool::scavenge() {
   while (true) {
@@ -19,11 +19,13 @@ void mygc::YoungGenerationPool::scavenge() {
 
     auto *ptr = generation->getFinalizerList().getHead();
     while (ptr) {
+      DLOG(INFO) << "young: call destructor on: " << ptr->data << std::endl;
       ptr->descriptor->callDestructor(ptr->data);
       ptr = ptr->nonTrivialNode.next;
     }
 
     lock.lock();
+    generation->reset();
     mClean.push_back(std::move(generation));
     lock.unlock();
   }
@@ -46,4 +48,9 @@ std::unique_ptr<mygc::YoungGeneration> mygc::YoungGenerationPool::getCleanGenera
   } else {
     return std::make_unique<YoungGeneration>();
   }
+}
+mygc::YoungGenerationPool::~YoungGenerationPool() {
+  mTerminate = true;
+  mCV.notify_all();
+  DLOG(INFO) << "~YoungGenerationPool" << std::endl;
 }

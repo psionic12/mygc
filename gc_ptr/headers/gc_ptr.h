@@ -72,6 +72,12 @@ class gc_ptr {
   explicit gc_ptr(GcReference gcReference) : gc_ptr() {
     mGcReference = gcReference;
   }
+  _Tp *get() {
+    return (_Tp *) mGcReference.getReference();
+  }
+  _Tp *operator->() {
+    return get();
+  }
  private:
   GcReference mGcReference;
   static thread_local _ThreadRegister mThreadRegister;

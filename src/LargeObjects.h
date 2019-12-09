@@ -15,10 +15,7 @@ namespace mygc {
 class LargeObjects {
  public:
   LargeObjects();
-  ~LargeObjects() {
-    mTerminate = true;
-    mCV.notify_all();
-  }
+  ~LargeObjects();
   LargeRecord *allocate(ITypeDescriptor *descriptor);
   void onScanEnd();
   void mark(LargeRecord *record);

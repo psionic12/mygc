@@ -4,9 +4,9 @@
 #include "gtest/gtest.h"
 #include "../headers/gc_ptr.h"
 
-class GcPtrTest : public testing::Test {};
+class PtrMemberTest : public testing::Test {};
 
-TEST_F(GcPtrTest, correctnessTest) {
+TEST_F(PtrMemberTest, correctnessTest) {
   class Bar {
    public:
     int *i;

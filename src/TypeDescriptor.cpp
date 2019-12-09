@@ -14,6 +14,15 @@ mygc::SingleType::SingleType(size_t typeSize,
                              bool completed) : ITypeDescriptor(typeSize, completed),
                                                mIndices(std::move(indices)),
                                                mDestructor(destructor) {}
+void mygc::SingleType::update(size_t typeSize,
+                              std::vector<size_t> &&indices,
+                              void (*destructor)(void *),
+                              bool completed) {
+  mTypeSize = typeSize;
+  mIndices = std::move(indices);
+  mDestructor = destructor;
+  mCompleted = completed;
+}
 mygc::ArrayType::ArrayType(size_t typeSize, ITypeDescriptor *elementType, size_t counts)
     : ITypeDescriptor(typeSize, true), mElementType(elementType), mCounts(counts) {}
 bool mygc::ArrayType::nonTrivial() {
@@ -28,4 +37,9 @@ void mygc::ArrayType::callDestructor(mygc::Object *object) {
   for (int i = 0; i < mCounts; i++) {
     mElementType->callDestructor(object + (i * mElementType->typeSize()));
   }
+}
+void mygc::ArrayType::update(size_t typeSize, mygc::ITypeDescriptor *elementType, size_t counts) {
+  mTypeSize = typeSize;
+  mElementType = elementType;
+  mCounts = counts;
 }

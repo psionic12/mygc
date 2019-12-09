@@ -2,6 +2,7 @@
 // Created by liu on 19-11-12.
 //
 
+#include <glog/logging.h>
 #include "OldGeneration.h"
 #include "ObjectRecord.h"
 #include "YoungGeneration.h"
@@ -30,9 +31,10 @@ mygc::OldGeneration::OldGeneration() : mScavenger(&OldGeneration::scavenge, this
 void mygc::OldGeneration::onScanEnd() {
   // first scan objects on mBlackList, these objects are unreachable objects but it's finalizer haven't be called yet
   std::unique_lock<std::mutex> lock(mBlackFinalizerMutex);
-  auto *record = (OldRecord *) mBlackList.getHead();
+  auto *record = mBlackList.getHead();
   while (record) {
     mark(record);
+    record = record->nonTrivialNode.next;
   }
   lock.unlock();
   // scan finished, all unknown objects are unreachable
@@ -47,7 +49,9 @@ void mygc::OldGeneration::onScanEnd() {
   // notify scavenger to work
   mCV.notify_one();
   for (auto &block : mBlocks) {
-    block->onScanEnd();
+    if (block) {
+      block->onScanEnd();
+    }
   }
   // collect finished, all objects state is unknown now
   mGrayList = std::move(mWhiteList);
@@ -73,9 +77,18 @@ void mygc::OldGeneration::scavenge() {
       record = mBlackList.getHead();
     }
     lock.unlock();
-    record->descriptor->callDestructor(((OldRecord *) record)->data);
+    DLOG(INFO) << "Old: call destructor on: " << record->data << std::endl;
+    record->descriptor->callDestructor(record->data);
     lock.lock();
     mBlackList.remove(record);
     lock.unlock();
   }
+}
+mygc::OldGeneration::~OldGeneration() {
+  mTerminate = true;
+  mCV.notify_all();
+  for (auto &block : mBlocks) {
+    delete block;
+  }
+  DLOG(INFO) << "~OldGeneration" << std::endl;
 }

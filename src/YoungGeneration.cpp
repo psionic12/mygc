@@ -10,6 +10,7 @@
 mygc::YoungGeneration::YoungGeneration() : mHeap(YOUNG_GENERATION_SIZE) {}
 mygc::YoungRecord *mygc::YoungGeneration::allocate(ITypeDescriptor *descriptor) {
   auto *record = (YoungRecord *) mHeap.allocate(sizeof(YoungRecord) + descriptor->typeSize());
+  if (!record) return nullptr;
   record->location = Location::kYoungGeneration;
   record->descriptor = descriptor;
   record->copied = false;
@@ -22,4 +23,10 @@ mygc::YoungRecord *mygc::YoungGeneration::allocate(ITypeDescriptor *descriptor) 
 }
 bool mygc::YoungGeneration::inHeapLocked(void *ptr) {
   return mHeap.inHeapLocked(ptr);
+}
+size_t mygc::YoungGeneration::defaultSize() {
+  return YOUNG_GENERATION_SIZE;
+}
+void mygc::YoungGeneration::reset() {
+  mHeap.reset();
 }
