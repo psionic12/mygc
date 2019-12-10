@@ -12,7 +12,12 @@ mygc::YoungGeneration *mygc::YoungGenerations::getMine() {
 }
 void mygc::YoungGenerations::onScanEnd() {
   for (auto &pair : mAttachedYoungGenerations) {
-    mYoungPool.putDirtyGeneration(std::move(pair.second));
-    pair.second = mYoungPool.getCleanGeneration();
+    if (pair.second) {
+      if (pair.second->getFinalizerList().getHead()) {
+        mYoungPool.putDirtyGeneration(std::move(pair.second));
+      } else {
+        pair.second->reset();
+      }
+    }
   }
 }

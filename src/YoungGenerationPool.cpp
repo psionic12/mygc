@@ -3,15 +3,16 @@
 //
 #include <glog/logging.h>
 #include "YoungGenerationPool.h"
+#include "Tester.h"
 void mygc::YoungGenerationPool::scavenge() {
   while (true) {
     std::unique_ptr<YoungGeneration> generation = nullptr;
     std::unique_lock<std::mutex> lock(mMutex);
     while (mDirty.empty()) {
-      mCV.wait(lock);
       if (mTerminate) {
         return;
-      }
+      };
+      mCV.wait(lock);
     }
     generation = std::move(mDirty.back());
     mDirty.pop_back();
@@ -19,19 +20,18 @@ void mygc::YoungGenerationPool::scavenge() {
 
     auto *ptr = generation->getFinalizerList().getHead();
     while (ptr) {
-      DLOG(INFO) << "young: call destructor on: " << ptr->data << std::endl;
+      DLOG(INFO) << "young: call destructor on: " << ((Tester *) ptr->data)->mId << std::endl;
       ptr->descriptor->callDestructor(ptr->data);
       ptr = ptr->nonTrivialNode.next;
     }
-
-    lock.lock();
     generation->reset();
+    lock.lock();
     mClean.push_back(std::move(generation));
     lock.unlock();
   }
 }
 mygc::YoungGenerationPool::YoungGenerationPool() : mScavenger(&YoungGenerationPool::scavenge, this), mTerminate(false) {
-  mScavenger.detach();
+//  mScavenger.detach();
 }
 void mygc::YoungGenerationPool::putDirtyGeneration(std::unique_ptr<mygc::YoungGeneration> &&generation) {
   std::unique_lock<std::mutex> lock(mMutex);
@@ -50,7 +50,10 @@ std::unique_ptr<mygc::YoungGeneration> mygc::YoungGenerationPool::getCleanGenera
   }
 }
 mygc::YoungGenerationPool::~YoungGenerationPool() {
+  std::unique_lock<std::mutex> lock(mMutex);
   mTerminate = true;
+  lock.unlock();
   mCV.notify_all();
+  mScavenger.join();
   DLOG(INFO) << "~YoungGenerationPool" << std::endl;
 }

@@ -13,10 +13,10 @@ class Tester {
     mConstructorCalled = true;
     static int i = 0;
     mId = i++;
-//    DLOG(INFO) << "Tester: " << i << "(" << this << ")" << std::endl;
+//    DLOG(INFO) << "Tester: " << mId << "(" << this << ")" << std::endl;
   }
   ~Tester() {
-    DLOG(INFO) << "~Tester: " << mId << std::endl;
+//    DLOG(INFO) << "~Tester: " << mId << "(" << this << ")" << std::endl;
   }
   bool constructorCalled() {
     return mConstructorCalled;
@@ -26,23 +26,26 @@ class Tester {
   }
  private:
   bool mConstructorCalled = false;
-  char mPlaceHolder[512];
+  char mPlaceHolder[1024];
   int mId;
 };
 
 TEST_F(GCTest, gcTest) {
   gc_ptr<Tester> t;
-  for (int i = 0; i < 20; i++) {
+  for (int i = 0; i < 10; i++) {
     t = make_gc<Tester>();
     ASSERT_EQ(t->constructorCalled(), true);
   }
-  for (int i = 0; i < 20; i++) {
+//  DLOG(INFO) << "t is " << t->getId() << std::endl;
+  for (int i = 0; i < 10; i++) {
     t = make_gc<Tester>();
   }
-  for (int i = 0; i < 20; i++) {
+//  DLOG(INFO) << "t is " << t->getId() << std::endl;
+  for (int i = 0; i < 10; i++) {
     t = make_gc<Tester>();
   }
-
-
+  DLOG(INFO) << "t is " << t->getId() << std::endl;
+//  sleep(1);
+  DLOG(INFO) << "test end" << std::endl;
 }
 

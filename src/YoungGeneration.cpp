@@ -29,4 +29,5 @@ size_t mygc::YoungGeneration::defaultSize() {
 }
 void mygc::YoungGeneration::reset() {
   mHeap.reset();
+  mFinalizerList.reset();
 }

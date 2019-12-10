@@ -18,7 +18,9 @@ class OldGeneration {
   OldRecord *copyFromYoungSTW(mygc::YoungRecord *from);
   ~OldGeneration();
   void onScanEnd();
-  void mark(OldRecord *record);
+  /// return true if marked, return false if record has already marked
+  bool mark(OldRecord *record);
+  void scan(OldRecord* record);
  private:
   IBlock *mBlocks[13]{
       nullptr,

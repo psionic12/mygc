@@ -6,6 +6,7 @@
 #include <glog/logging.h>
 #include "GarbageCollector.h"
 #include "stop_the_world.h"
+#include "Tester.h"
 
 #ifndef MYGC_STOP_SIGNAL
 #define MYGC_STOP_SIGNAL SIGRTMIN + ('m' + 'y' + 'g' + 'c') % (SIGRTMAX - SIGRTMIN)
@@ -104,6 +105,7 @@ mygc::Record *mygc::GarbageCollector::collectRecordSTW(Record *root) {
       auto *young = (YoungRecord *) root;
       OldRecord *old;
       if (!young->copied) {
+//        DLOG(INFO) << "copy alive objects " << ((Tester *) (young->data))->mId << std::endl;
         old = mOldGeneration.copyFromYoungSTW(young);
         young->copied = true;
         if (young->descriptor->nonTrivial()) {
@@ -119,7 +121,7 @@ mygc::Record *mygc::GarbageCollector::collectRecordSTW(Record *root) {
     }
     case Location::kOldGeneration: {
       auto *old = (OldRecord *) root;
-      mOldGeneration.mark(old);
+      mOldGeneration.scan(old);
       break;
     }
     case Location::kLargeObjects: {
@@ -191,4 +193,8 @@ std::vector<size_t> mygc::GarbageCollector::getIndices(size_t typeId) {
 std::set<mygc::GcReference *> mygc::GarbageCollector::getRoots() {
   std::lock_guard<std::mutex> guard(mGcMutex);
   return mGcRoots;
+}
+
+extern "C" void __cxa_pure_virtual() {
+  DLOG(INFO) << "__cxa_pure_virtual" << std::endl;
 }
