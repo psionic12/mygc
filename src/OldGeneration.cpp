@@ -97,7 +97,7 @@ void mygc::OldGeneration::scan(mygc::OldRecord *record) {
   DLOG(INFO) << "Old: scan: " << ((Tester *) record->data)->mId << std::endl;
   if (mark(record)) {
     if (record->descriptor->nonTrivial()) {
-      DLOG(INFO) << "Old: move: " << ((Tester *) record->data)->mId << "to white";
+      DLOG(INFO) << "Old: move: " << ((Tester *) record->data)->mId << " to white";
       mGrayList.remove(record);
       mWhiteList.add(record);
     }

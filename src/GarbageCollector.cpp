@@ -17,6 +17,7 @@ mygc::GarbageCollector::GarbageCollector() {
   // initial glog
 //  google::InitGoogleLogging(nullptr);
   FLAGS_logtostderr = true;
+  google::InstallFailureSignalHandler();
 
   LOG(INFO) << "mygc: " << std::endl;
   LOG(INFO) << "stop signal: " << MYGC_STOP_SIGNAL << std::endl;
@@ -122,11 +123,13 @@ mygc::Record *mygc::GarbageCollector::collectRecordSTW(Record *root) {
     case Location::kOldGeneration: {
       auto *old = (OldRecord *) root;
       mOldGeneration.scan(old);
+      handledRecord = old;
       break;
     }
     case Location::kLargeObjects: {
       auto *large = (LargeRecord *) root;
       mLargeObjects.mark(large);
+      handledRecord = large;
       break;
     }
   }
@@ -165,7 +168,7 @@ void mygc::GarbageCollector::iterateArray(mygc::ArrayType *arrayType, mygc::Obje
   }
 }
 void mygc::GarbageCollector::collectSTW() {
-//  LOG(INFO) << "start collecting" << std::endl;
+  LOG(INFO) << "start collecting" << std::endl;
   for (auto *ref : mGcRoots) {
     auto *record = ref->getRecord();
     if (record) {
@@ -176,7 +179,7 @@ void mygc::GarbageCollector::collectSTW() {
   mOldGeneration.onScanEnd();
   mLargeObjects.onScanEnd();
   mYoungGenerations.onScanEnd();
-//  LOG(INFO) << "collecting finished" << std::endl;
+  LOG(INFO) << "collecting finished" << std::endl;
 }
 bool mygc::GarbageCollector::inHeap(void *ptr) {
   return mYoungGenerations.getMine()->inHeapLocked(ptr);

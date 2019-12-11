@@ -36,8 +36,8 @@ void stop_the_world(const std::set<pthread_t> &threads) {
   for (auto thread : threads) {
     if (thread != self) {
       gTotalThreads++;
-      pthread_kill(thread, MYGC_STOP_SIGNAL);
       LOG(INFO) << "send stop signal to tid: " << thread;
+      pthread_kill(thread, MYGC_STOP_SIGNAL);
     }
   }
   {
