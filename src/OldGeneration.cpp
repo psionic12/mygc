@@ -85,7 +85,9 @@ void mygc::OldGeneration::scavenge() {
   }
 }
 mygc::OldGeneration::~OldGeneration() {
+  std::unique_lock<std::mutex> lock(mBlackFinalizerMutex);
   mTerminate = true;
+  lock.unlock();
   mCV.notify_all();
   for (auto &block : mBlocks) {
     delete block;

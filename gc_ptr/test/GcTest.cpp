@@ -57,6 +57,7 @@ void worker2() {
 
 TEST_F(GCTest, gcTest) {
   std::thread thread2(worker2);
+  thread2.detach();
   DLOG(INFO) << "start" << std::endl;
   gc_ptr<Tester> t;
   for (int i = 0; i < 10; i++) {
@@ -73,9 +74,11 @@ TEST_F(GCTest, gcTest) {
     t = make_gc<Tester>();
   }
   DLOG(INFO) << "t is " << t->getId() << std::endl;
+  t = nullptr;
   sleep(2);
-  ASSERT_EQ(v, std::vector<int>(128));
+  for (auto i : v) {
+    ASSERT_TRUE(i == 1 || i == 0);
+  }
   DLOG(INFO) << "test end" << std::endl;
-  thread2.join();
 }
 

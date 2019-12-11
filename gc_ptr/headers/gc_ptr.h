@@ -64,6 +64,11 @@ class gc_ptr {
     }
     createIndices();
   }
+  gc_ptr &
+  operator=(nullptr_t) noexcept {
+    mGcReference.update(nullptr);
+    return *this;
+  }
   ~gc_ptr() {
     if (!GcReference::isInYoungGeneration(this)) {
       GcReference::removeRoots(&mGcReference);
