@@ -23,7 +23,7 @@ void worker() {
   mygc::gc_ptr<int> p2;
   mygc::gc_ptr<int> p3;
   while (true) {
-    sleep(1);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     {
       std::unique_lock<std::mutex> lk(gMutex);
       if (gStop) break;
@@ -36,7 +36,7 @@ TEST_F(GcPtrThreadTest, threadTest) {
     std::thread t(worker);
     t.detach();
   }
-  sleep(2);
+  std::this_thread::sleep_for(std::chrono::seconds(2));
   {
     std::lock_guard<std::mutex> guard(gMutex);
     auto attached = mygc::GcReference::getAttachedThreads();
@@ -46,7 +46,7 @@ TEST_F(GcPtrThreadTest, threadTest) {
     gStop = true;
   }
 
-  sleep(2);
+  std::this_thread::sleep_for(std::chrono::seconds(2));
   {
     std::lock_guard<std::mutex> guard(gMutex);
     auto attached = mygc::GcReference::getAttachedThreads();

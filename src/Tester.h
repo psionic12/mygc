@@ -8,7 +8,6 @@
 namespace mygc {
 struct Tester {
   bool mConstructorCalled;
-  std::mutex mMutex;
   char mPlaceHolder[1024];
   int mId;
 };

@@ -20,7 +20,7 @@ void mygc::YoungGenerationPool::scavenge() {
 
     auto *ptr = generation->getFinalizerList().getHead();
     while (ptr) {
-      DLOG(INFO) << "young: call destructor on: " << ((Tester *) ptr->data)->mId << std::endl;
+      DLOG(INFO) << "young: call destructor on: " << ((Tester *) ptr->data)->mId << "(" << ptr << ")" << std::endl;
       ptr->descriptor->callDestructor(ptr->data);
       ptr = ptr->nonTrivialNode.next;
     }

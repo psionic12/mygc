@@ -8,7 +8,9 @@
 using namespace mygc;
 
 class GCTest : public testing::Test {};
-std::vector<int> v(128);
+std::mutex mMutex;
+std::vector<int> v1;
+std::vector<int> v2;
 
 class Tester {
  public:
@@ -17,13 +19,14 @@ class Tester {
     std::unique_lock<std::mutex> lock(mMutex);
     static int i = 0;
     mId = i++;
-    v[mId] += 1;
+    v1[mId] += 1;
+    v2[mId] = mId;
     lock.unlock();
 //    DLOG(INFO) << "Tester: " << mId << "(" << this << ")" << std::endl;
   }
   ~Tester() {
     std::unique_lock<std::mutex> lock(mMutex);
-    v[mId] -= 1;
+    v1[mId] -= 1;
     lock.unlock();
 //    DLOG(INFO) << "~Tester: " << mId << "(" << this << ")" << std::endl;
   }
@@ -35,7 +38,6 @@ class Tester {
   }
  private:
   bool mConstructorCalled = false;
-  std::mutex mMutex;
   char mPlaceHolder[1024];
   int mId;
 };
@@ -56,6 +58,9 @@ void worker2() {
 }
 
 TEST_F(GCTest, gcTest) {
+  v1.resize(70);
+  v2.resize(70);
+
   std::thread thread2(worker2);
   thread2.detach();
   DLOG(INFO) << "start" << std::endl;
@@ -75,9 +80,12 @@ TEST_F(GCTest, gcTest) {
   }
   DLOG(INFO) << "t is " << t->getId() << std::endl;
   t = nullptr;
-  sleep(2);
-  for (auto i : v) {
-    ASSERT_TRUE(i == 1 || i == 0);
+  std::this_thread::sleep_for(std::chrono::seconds(3));
+  for (int i = 0; i < v2.size(); i++) {
+    ASSERT_EQ(v2[i], i) << " : v2[" << i << "] is " << v2[i] << std::endl;
+  }
+  for (int i = 0; i < v1.size(); i++) {
+    ASSERT_TRUE(v1[i] == 1 || v1[i] == 0) << " : v1[" << i << "] is " << v1[i] << std::endl;
   }
   DLOG(INFO) << "test end" << std::endl;
 }

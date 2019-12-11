@@ -6,13 +6,14 @@
 #include <unistd.h>
 #include <iostream>
 #include <cstring>
+#include <thread>
 
 #include "../src/stop_the_world.h"
 
 void *workerFunc(void *index) {
   while (1) {
     std::cout <<  *(int*) index << std::endl;
-    sleep(1);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
   }
 }
 

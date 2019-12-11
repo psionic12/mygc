@@ -77,7 +77,7 @@ void mygc::OldGeneration::scavenge() {
       record = mBlackList.getHead();
     }
     lock.unlock();
-    DLOG(INFO) << "Old: call destructor on: " << ((Tester *) record->data)->mId << std::endl;
+    DLOG(INFO) << "Old: call destructor on: " << ((Tester *) record->data)->mId << "(" << record << ")" << std::endl;
     record->descriptor->callDestructor(record->data);
     lock.lock();
     mBlackList.remove(record);

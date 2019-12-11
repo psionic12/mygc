@@ -48,6 +48,7 @@ void stop_the_world(const std::set<pthread_t> &threads) {
     } else {
 //      LOG(INFO) << "all thread is already stopped";
     }
+    LOG(INFO) << "stop successfully" << std::endl;
   }
 }
 void restart_the_world() {
