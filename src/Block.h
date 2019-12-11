@@ -36,7 +36,7 @@ class Block : public IBlock {
     return {index, ptr};
   }
   bool isMarked(size_t index) override {
-    return mCurrentSet.isSet(index);
+    return /*mCurrentSet.isSet(index) &&*/ mNewSet.isSet(index);
   }
   void mark(size_t index) override {
     mCurrentSet.safeSet(index);
