@@ -1,9 +1,7 @@
 //
 // Created by liu on 19-11-26.
 //
-#include <glog/logging.h>
 #include "YoungGenerationPool.h"
-#include "Tester.h"
 void mygc::YoungGenerationPool::scavenge() {
   while (true) {
     std::unique_ptr<YoungGeneration> generation = nullptr;
@@ -55,5 +53,4 @@ mygc::YoungGenerationPool::~YoungGenerationPool() {
   lock.unlock();
   mCV.notify_all();
   mScavenger.join();
-  DLOG(INFO) << "~YoungGenerationPool" << std::endl;
 }

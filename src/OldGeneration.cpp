@@ -2,12 +2,11 @@
 // Created by liu on 19-11-12.
 //
 
-#include <glog/logging.h>
 #include "OldGeneration.h"
 #include "ObjectRecord.h"
 #include "YoungGeneration.h"
 #include "GcReference.h"
-#include "Tester.h"
+#include "Tools.h"
 
 mygc::OldRecord *mygc::OldGeneration::copyFromYoungSTW(YoungRecord *from) {
   auto *descriptor = from->descriptor;
@@ -77,7 +76,6 @@ void mygc::OldGeneration::scavenge() {
       record = mBlackList.getHead();
     }
     lock.unlock();
-//    DLOG(INFO) << "Old: call destructor on: " << ((Tester *) record->data)->mId << "(" << record << ")" << std::endl;
     record->descriptor->callDestructor(record->data);
     lock.lock();
     mBlackList.remove(record);
@@ -93,13 +91,10 @@ mygc::OldGeneration::~OldGeneration() {
     delete block;
   }
   mScavenger.join();
-  DLOG(INFO) << "~OldGeneration" << std::endl;
 }
 void mygc::OldGeneration::scan(mygc::OldRecord *record) {
-  DLOG(INFO) << "Old: scan: " << ((Tester *) record->data)->mId << std::endl;
   if (mark(record)) {
     if (record->descriptor->nonTrivial()) {
-      DLOG(INFO) << "Old: move: " << ((Tester *) record->data)->mId << " to white";
       mGrayList.remove(record);
       mWhiteList.add(record);
     }

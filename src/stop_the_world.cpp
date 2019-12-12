@@ -3,7 +3,7 @@
 //
 
 #include <signal.h>
-#include <glog/logging.h>
+#include "Tools.h"
 #include <mutex>
 #include <condition_variable>
 
@@ -20,15 +20,15 @@ unsigned long gTotalThreads = 0;
 unsigned long sAcknowledgeThreads = 0;
 
 void stop_handler(int signal) {
-  LOG(INFO) << "tid: " << pthread_self() << " caught signal: " << signal << std::endl;
+  mygc::Log("tid: %d, caught signal: %d", pthread_self(), signal);
   std::unique_lock<std::mutex> lk(sThreadBlocker);
   sAcknowledgeThreads++;
   if (sAcknowledgeThreads == gTotalThreads) {
     sAcknowledgeCondition.notify_all();
-    LOG(INFO) << "notify all thread is stopped";
+    mygc::Log("notify all thread is stopped");
   }
   sBlockerCondition.wait(lk);
-  LOG(INFO) << "handler resumed";
+  mygc::Log("handler resumed");
 }
 
 void stop_the_world(const std::set<pthread_t> &threads) {
@@ -36,19 +36,19 @@ void stop_the_world(const std::set<pthread_t> &threads) {
   for (auto thread : threads) {
     if (thread != self) {
       gTotalThreads++;
-      LOG(INFO) << "send stop signal to tid: " << thread;
+      mygc::Log("send stop signal to tid: %u", thread);
       pthread_kill(thread, MYGC_STOP_SIGNAL);
     }
   }
   {
     std::unique_lock<std::mutex> lk(sThreadBlocker);
     if (sAcknowledgeThreads != gTotalThreads) {
-      LOG(INFO) << "waiting for threads to stop";
+      mygc::Log("waiting for threads to stop");
       sAcknowledgeCondition.wait(lk);
     } else {
-      LOG(INFO) << "all thread is already stopped";
+      mygc::Log("all thread is already stopped");
     }
-    LOG(INFO) << "stop successfully" << std::endl;
+    mygc::Log("stop successfully");
   }
 }
 void restart_the_world() {
@@ -59,9 +59,9 @@ void restart_the_world() {
 void stop_the_world_init() {
   // init signal for stopping threads
   struct sigaction act;
-  memset (&act, '\0', sizeof(act));
+  memset(&act, '\0', sizeof(act));
   act.sa_handler = stop_handler;
-  sigemptyset (&act.sa_mask);
+  sigemptyset(&act.sa_mask);
   act.sa_flags = 0;
-  sigaction(MYGC_STOP_SIGNAL, &act, nullptr);
+  sigaction (MYGC_STOP_SIGNAL, &act, nullptr);
 }

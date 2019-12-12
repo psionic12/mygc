@@ -3,10 +3,9 @@
 //
 
 #include <signal.h>
-#include <glog/logging.h>
 #include "GarbageCollector.h"
 #include "stop_the_world.h"
-#include "Tester.h"
+#include "Tools.h"
 
 #ifndef MYGC_STOP_SIGNAL
 #define MYGC_STOP_SIGNAL SIGRTMIN + ('m' + 'y' + 'g' + 'c') % (SIGRTMAX - SIGRTMIN)
@@ -17,8 +16,8 @@ mygc::GarbageCollector::GarbageCollector() {
   stop_the_world_init();
   // initial glog
 //  google::InitGoogleLogging(nullptr);
-  FLAGS_logtostderr = true;
-  google::InstallFailureSignalHandler();
+//  FLAGS_logtostderr = true;
+//  google::InstallFailureSignalHandler();
 
 //  LOG(INFO) << "mygc: " << std::endl;
 //  LOG(INFO) << "stop signal: " << MYGC_STOP_SIGNAL << std::endl;
@@ -173,7 +172,7 @@ void mygc::GarbageCollector::iterateArray(mygc::ArrayType *arrayType, mygc::Obje
   }
 }
 void mygc::GarbageCollector::collectSTW() {
-  LOG(INFO) << "start collecting" << std::endl;
+  Log("start collecting");
   for (auto *ref : mGcRoots) {
     auto *record = ref->getRecord();
     if (record) {
@@ -185,7 +184,7 @@ void mygc::GarbageCollector::collectSTW() {
   mLargeObjects.onScanEnd();
   mYoungPool.putDirtyGeneration(std::move(tYoung));
   tYoung = mYoungPool.getCleanGeneration();
-  LOG(INFO) << "collecting finished" << std::endl;
+  Log("collecting finished");
 }
 bool mygc::GarbageCollector::inHeap(void *ptr) {
   return getYoung()->inHeapLocked(ptr);
@@ -211,5 +210,6 @@ mygc::YoungGeneration *mygc::GarbageCollector::getYoung() {
 }
 
 extern "C" void __cxa_pure_virtual() {
-  DLOG(INFO) << "__cxa_pure_virtual" << std::endl;
+  //TODO Print stack trace
+  mygc::Log("__cxa_pure_virtual");
 }
