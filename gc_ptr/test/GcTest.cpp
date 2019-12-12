@@ -14,7 +14,7 @@ std::vector<int> v2;
 
 class Tester {
  public:
-  Tester() {
+  Tester() : mChild(make_gc<Tester>()) {
 //    DLOG(INFO) << "start construct";
     mConstructorCalled = true;
     std::unique_lock<std::mutex> lock(mMutex);
@@ -24,7 +24,7 @@ class Tester {
     v2[mId] = mId;
     lock.unlock();
 
-//    DLOG(INFO) << "Tester: " << mId << "(" << this << ")" << std::endl;
+    DLOG(INFO) << "Tester: " << mId << "(" << this << ")" << std::endl;
 //    DLOG(INFO) << "finished construct: " << mId << "(" << this << ")";
   }
   ~Tester() {
@@ -41,8 +41,9 @@ class Tester {
   }
  private:
   bool mConstructorCalled = false;
-  char mPlaceHolder[1024];
+  char mPlaceHolder[512];
   int mId;
+  gc_ptr<Tester> mChild;
 };
 
 void worker2() {

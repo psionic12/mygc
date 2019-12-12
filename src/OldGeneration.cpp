@@ -7,13 +7,20 @@
 #include "YoungGeneration.h"
 #include "GcReference.h"
 #include "Tools.h"
+#include "GarbageCollector.h"
 
 mygc::OldRecord *mygc::OldGeneration::copyFromYoungSTW(YoungRecord *from) {
   auto *descriptor = from->descriptor;
   // choose which block to use first
   auto blockIndex = descriptor->getBlockIndex();
   auto *block = mBlocks[blockIndex];
-  auto pair = block->getUnusedAndMark();
+  auto pair = block->getUnusedAndMark([](size_t size) {
+    if (GarbageCollector::getCollector().willOom(size)) {
+      throw std::runtime_error("out of memory");
+    } else {
+      GarbageCollector::getCollector().updateTotalSize();
+    }
+  });
   void *ptr = pair.second;
   auto *record = (OldRecord *) ptr;
   record->index = pair.first;
@@ -99,4 +106,13 @@ void mygc::OldGeneration::scan(mygc::OldRecord *record) {
       mWhiteList.add(record);
     }
   }
+}
+size_t mygc::OldGeneration::getAllocatedSize() {
+  size_t size = 0;
+  for (auto &block : mBlocks) {
+    if (block) {
+      size += block->allocatedSize();
+    }
+  }
+  return size;
 }

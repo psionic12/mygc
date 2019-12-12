@@ -33,6 +33,8 @@ class GarbageCollector {
                     bool completed);
   void registerType(size_t id, size_t typeSize, size_t elementType, size_t counts);
   ITypeDescriptor *getTypeById(size_t id);
+  bool willOom(size_t allocaSize);
+  void updateTotalSize();
  private:
   GarbageCollector();
   void stopTheWorldLocked();
@@ -50,6 +52,7 @@ class GarbageCollector {
   YoungGenerationPool mYoungPool;
   static thread_local std::unique_ptr<YoungGeneration> tYoung;
   YoungGeneration* getYoung();
+  size_t mRemain;
  public:
   //only used for testing
   std::vector<size_t> getIndices(size_t typeId);

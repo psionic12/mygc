@@ -20,15 +20,15 @@ unsigned long gTotalThreads = 0;
 unsigned long sAcknowledgeThreads = 0;
 
 void stop_handler(int signal) {
-  mygc::Log("tid: %d, caught signal: %d", pthread_self(), signal);
+//  GCLOG("tid: %u, caught signal: %u", pthread_self(), signal);
   std::unique_lock<std::mutex> lk(sThreadBlocker);
   sAcknowledgeThreads++;
   if (sAcknowledgeThreads == gTotalThreads) {
     sAcknowledgeCondition.notify_all();
-    mygc::Log("notify all thread is stopped");
+//    GCLOG("notify all thread is stopped");
   }
   sBlockerCondition.wait(lk);
-  mygc::Log("handler resumed");
+//  GCLOG("handler resumed");
 }
 
 void stop_the_world(const std::set<pthread_t> &threads) {
@@ -36,19 +36,19 @@ void stop_the_world(const std::set<pthread_t> &threads) {
   for (auto thread : threads) {
     if (thread != self) {
       gTotalThreads++;
-      mygc::Log("send stop signal to tid: %u", thread);
+//      GCLOG("send stop signal to tid: %u", thread);
       pthread_kill(thread, MYGC_STOP_SIGNAL);
     }
   }
   {
     std::unique_lock<std::mutex> lk(sThreadBlocker);
     if (sAcknowledgeThreads != gTotalThreads) {
-      mygc::Log("waiting for threads to stop");
+//      GCLOG("waiting for threads to stop");
       sAcknowledgeCondition.wait(lk);
     } else {
-      mygc::Log("all thread is already stopped");
+//      GCLOG("all thread is already stopped");
     }
-    mygc::Log("stop successfully");
+//    GCLOG("stop successfully");
   }
 }
 void restart_the_world() {

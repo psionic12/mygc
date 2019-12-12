@@ -11,6 +11,7 @@
 #include <memory>
 #include <glog/logging.h>
 #include <type_traits>
+#include <atomic>
 #include "GcReference.h"
 namespace mygc {
 class _ThreadRegister {
@@ -83,6 +84,7 @@ class gc_ptr {
   _Tp *operator->() {
     return get();
   }
+  static std::atomic<bool> mIndexing;
  private:
   GcReference mGcReference;
   static thread_local _ThreadRegister mThreadRegister;
@@ -94,6 +96,8 @@ class gc_ptr {
     }
   }
 };
+template<typename _Tp>
+std::atomic<bool> gc_ptr<_Tp>::mIndexing(false);
 template<typename _Tp>
 _TypeRegister<_Tp> gc_ptr<_Tp>::mTypeRegister;
 template<typename _Tp>
@@ -111,9 +115,13 @@ make_gc(_Args &&... __args) {
   GcReference reference;
   reference.gcAlloca(typeId);
   void *ptr = reference.getReference();
-  if (!completed) _AddressBase::push(ptr);
+  bool indexing = !completed && !gc_ptr<_Tp>::mIndexing;
+  if (indexing) {
+    gc_ptr<_Tp>::mIndexing = true;
+    _AddressBase::push(ptr);
+  }
   auto *t = new(ptr) _Tp(std::forward<_Args>(__args)...);
-  if (!completed) {
+  if (!indexing) {
     auto &pair = _AddressBase::back();
     void *base = pair.first;
     std::vector<size_t> offsets;

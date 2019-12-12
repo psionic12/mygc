@@ -10,10 +10,11 @@ namespace mygc {
 class IBlock {
  public:
   virtual ~IBlock() = default;
-  virtual std::pair<size_t, void *> getUnusedAndMark() = 0;
+  virtual std::pair<size_t, void *> getUnusedAndMark(const std::function<void(size_t)> &f = {}) = 0;
   virtual void mark(size_t index) = 0;
   virtual bool isMarked(size_t index) = 0;
   virtual void onScanEnd() = 0;
+  virtual size_t allocatedSize() = 0;
 };
 
 template<size_t Size>
@@ -27,10 +28,10 @@ class Block : public IBlock {
   BitSet mCurrentSet;
   DynamicSlots<SlotType> mSlots;
  public:
-  std::pair<size_t, void *> getUnusedAndMark() override {
+  std::pair<size_t, void *> getUnusedAndMark(const std::function<void(size_t)> &f) override {
     auto coordinate = mCurrentSet.getUnset();
     auto index = coordinate.getIndex();
-    auto *ptr = mSlots.safeGetSlot(index);
+    auto *ptr = mSlots.safeGetSlot(index, f);
     mCurrentSet.safeSet(coordinate);
     mNewSet.safeSet(coordinate);
     return {index, ptr};
@@ -46,6 +47,9 @@ class Block : public IBlock {
     // now new set is fully reliable, make it as current set;
     mCurrentSet.swap(mNewSet);
     mNewSet.clear();
+  }
+  size_t allocatedSize() override {
+    return mCurrentSet.bitCounts() * sizeof(SlotType);
   }
 };
 } //namespace mygc

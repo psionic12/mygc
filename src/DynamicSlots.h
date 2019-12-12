@@ -11,11 +11,13 @@ namespace mygc {
 template<typename SlotType>
 class DynamicSlots {
  public:
-  void *safeGetSlot(size_t index) {
+  void *safeGetSlot(size_t index, const std::function<void(size_t)> &f = {}) {
     size_t naturalIndex = index + 1;
     size_t base = Tools::getLastOneFromRight(naturalIndex) - 1;
     while (mSlots.size() <= base) {
-      mSlots.push_back(new SlotType[1 << mSlots.size()]);
+      size_t requiredSize = 1u << mSlots.size();
+      f(requiredSize);
+      mSlots.push_back(new SlotType[requiredSize]);
     }
     size_t offset = naturalIndex & ~(1ul << base);
     return mSlots[base] + offset;

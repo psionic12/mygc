@@ -20,6 +20,9 @@
 #include <thread>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
+#define __FILENAME__ (__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 : __FILE__)
+#define GCLOG(format, ...) mygc::Log(__FILENAME__, __LINE__, format, ##__VA_ARGS__)
+
 namespace mygc {
 class Tools {
  public:
@@ -34,12 +37,13 @@ class Tools {
 // not thread safe
 class Log {
  public:
-  Log(const char *format, ...) {
+  Log(const char *filename, int line, const char *format, ...) {
     std::stringstream stringstream;
     stringstream << now_str();
     stringstream << " ";
     stringstream << std::this_thread::get_id();
     stringstream << " ";
+    stringstream << filename << ":" << line << "] ";
     fprintf(stderr, "%s", stringstream.str().c_str());
     va_list arg;
     va_list argptr;
@@ -47,6 +51,7 @@ class Log {
     vfprintf(stderr, format, argptr);
     va_end(argptr);
     fprintf(stderr, "\n");
+    fflush(stderr);
   }
  private:
   std::string now_str() {

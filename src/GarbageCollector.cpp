@@ -8,11 +8,15 @@
 #include "Tools.h"
 
 #ifndef MYGC_STOP_SIGNAL
-#define MYGC_STOP_SIGNAL SIGRTMIN + ('m' + 'y' + 'g' + 'c') % (SIGRTMAX - SIGRTMIN)
+#define MYGC_STOP_SIGNAL (SIGRTMIN + ('m' + 'y' + 'g' + 'c') % (SIGRTMAX - SIGRTMIN))
+#endif
+
+#ifndef MYGC_TOTAL_SIZE
+#define MYGC_TOTAL_SIZE (2 << 29)
 #endif
 
 thread_local std::unique_ptr<mygc::YoungGeneration> mygc::GarbageCollector::tYoung;
-mygc::GarbageCollector::GarbageCollector() {
+mygc::GarbageCollector::GarbageCollector() : mRemain(MYGC_TOTAL_SIZE) {
   stop_the_world_init();
   // initial glog
 //  google::InitGoogleLogging(nullptr);
@@ -172,7 +176,7 @@ void mygc::GarbageCollector::iterateArray(mygc::ArrayType *arrayType, mygc::Obje
   }
 }
 void mygc::GarbageCollector::collectSTW() {
-  Log("start collecting");
+//  GCLOG("start collecting");
   for (auto *ref : mGcRoots) {
     auto *record = ref->getRecord();
     if (record) {
@@ -184,7 +188,7 @@ void mygc::GarbageCollector::collectSTW() {
   mLargeObjects.onScanEnd();
   mYoungPool.putDirtyGeneration(std::move(tYoung));
   tYoung = mYoungPool.getCleanGeneration();
-  Log("collecting finished");
+//  GCLOG("collecting finished");
 }
 bool mygc::GarbageCollector::inHeap(void *ptr) {
   return getYoung()->inHeapLocked(ptr);
@@ -208,8 +212,14 @@ mygc::YoungGeneration *mygc::GarbageCollector::getYoung() {
   }
   return tYoung.get();
 }
+bool mygc::GarbageCollector::willOom(size_t allocaSize) {
+  return mRemain < allocaSize;
+}
+void mygc::GarbageCollector::updateTotalSize() {
+  mRemain = MYGC_TOTAL_SIZE - mOldGeneration.getAllocatedSize();
+}
 
 extern "C" void __cxa_pure_virtual() {
   //TODO Print stack trace
-  mygc::Log("__cxa_pure_virtual");
+  GCLOG("__cxa_pure_virtual");
 }

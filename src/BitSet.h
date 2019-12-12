@@ -45,6 +45,7 @@ class BitSet {
   const std::vector<ElementType> &data() const;
   bool isSet(size_t index);
   void swap(BitSet& set);
+  size_t bitCounts();
  private:
   static constexpr int kElementSize = sizeof(ElementType) * 8;
   static constexpr ElementType kMask = 1UL << (kElementSize - 1);

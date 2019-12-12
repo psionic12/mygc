@@ -2,6 +2,7 @@
 // Created by liu on 19-11-26.
 //
 #include "YoungGenerationPool.h"
+#include "GarbageCollector.h"
 void mygc::YoungGenerationPool::scavenge() {
   while (true) {
     std::unique_ptr<YoungGeneration> generation = nullptr;
@@ -44,7 +45,12 @@ std::unique_ptr<mygc::YoungGeneration> mygc::YoungGenerationPool::getCleanGenera
     mClean.pop_back();
     return generation;
   } else {
-    return std::make_unique<YoungGeneration>();
+    if (GarbageCollector::getCollector().willOom(YoungGeneration::defaultSize())) {
+      throw std::runtime_error("out of memory");
+    } else {
+      GarbageCollector::getCollector().updateTotalSize();
+      return std::make_unique<YoungGeneration>();
+    }
   }
 }
 mygc::YoungGenerationPool::~YoungGenerationPool() {

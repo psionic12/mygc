@@ -69,3 +69,6 @@ bool mygc::BitSet::isSet(size_t index) {
 void mygc::BitSet::swap(mygc::BitSet &set) {
   mBitSet.swap(set.mBitSet);
 }
+size_t mygc::BitSet::bitCounts() {
+  return mBitSet.size() * kElementSize;
+}

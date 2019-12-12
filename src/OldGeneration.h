@@ -20,7 +20,8 @@ class OldGeneration {
   void onScanEnd();
   /// return true if marked, return false if record has already marked
   bool mark(OldRecord *record);
-  void scan(OldRecord* record);
+  void scan(OldRecord *record);
+  size_t getAllocatedSize();
  private:
   IBlock *mBlocks[13]{
       nullptr,
