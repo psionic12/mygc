@@ -46,7 +46,7 @@ void stop_the_world(const std::set<pthread_t> &threads) {
       LOG(INFO) << "waiting for threads to stop";
       sAcknowledgeCondition.wait(lk);
     } else {
-//      LOG(INFO) << "all thread is already stopped";
+      LOG(INFO) << "all thread is already stopped";
     }
     LOG(INFO) << "stop successfully" << std::endl;
   }
@@ -58,6 +58,10 @@ void restart_the_world() {
 }
 void stop_the_world_init() {
   // init signal for stopping threads
-  //TODO use sigact()
-  signal(MYGC_STOP_SIGNAL, stop_handler);
+  struct sigaction act;
+  memset (&act, '\0', sizeof(act));
+  act.sa_handler = stop_handler;
+  sigemptyset (&act.sa_mask);
+  act.sa_flags = 0;
+  sigaction(MYGC_STOP_SIGNAL, &act, nullptr);
 }

@@ -15,6 +15,7 @@ std::vector<int> v2;
 class Tester {
  public:
   Tester() {
+//    DLOG(INFO) << "start construct";
     mConstructorCalled = true;
     std::unique_lock<std::mutex> lock(mMutex);
     static int i = 0;
@@ -22,7 +23,9 @@ class Tester {
     v1[mId] += 1;
     v2[mId] = mId;
     lock.unlock();
+
 //    DLOG(INFO) << "Tester: " << mId << "(" << this << ")" << std::endl;
+//    DLOG(INFO) << "finished construct: " << mId << "(" << this << ")";
   }
   ~Tester() {
     std::unique_lock<std::mutex> lock(mMutex);

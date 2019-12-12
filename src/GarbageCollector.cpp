@@ -12,6 +12,7 @@
 #define MYGC_STOP_SIGNAL SIGRTMIN + ('m' + 'y' + 'g' + 'c') % (SIGRTMAX - SIGRTMIN)
 #endif
 
+thread_local std::unique_ptr<mygc::YoungGeneration> mygc::GarbageCollector::tYoung;
 mygc::GarbageCollector::GarbageCollector() {
   stop_the_world_init();
   // initial glog
@@ -19,25 +20,25 @@ mygc::GarbageCollector::GarbageCollector() {
   FLAGS_logtostderr = true;
   google::InstallFailureSignalHandler();
 
-  LOG(INFO) << "mygc: " << std::endl;
-  LOG(INFO) << "stop signal: " << MYGC_STOP_SIGNAL << std::endl;
-  LOG(INFO) << "young generation heap size: " << YoungGeneration::defaultSize() << std::endl;
+//  LOG(INFO) << "mygc: " << std::endl;
+//  LOG(INFO) << "stop signal: " << MYGC_STOP_SIGNAL << std::endl;
+//  LOG(INFO) << "young generation heap size: " << YoungGeneration::defaultSize() << std::endl;
 }
 
 mygc::YoungRecord *mygc::GarbageCollector::New(ITypeDescriptor *descriptor) {
-  auto *ptr = mYoungGenerations.getMine()->allocate(descriptor);
+  auto *ptr = getYoung()->allocate(descriptor);
   if (!ptr) {
     {
       std::lock_guard<std::mutex> guard(mGcMutex);
       // try again in case a gc has finished
-      ptr = mYoungGenerations.getMine()->allocate(descriptor);
+      ptr = getYoung()->allocate(descriptor);
       if (!ptr) {
         stopTheWorldLocked();
         collectSTW();
         restartTheWorldLocked();
       }
     }
-    ptr = mYoungGenerations.getMine()->allocate(descriptor);
+    ptr = getYoung()->allocate(descriptor);
     if (!ptr) {
       throw std::runtime_error("mygc is out of memory");
     }
@@ -81,7 +82,7 @@ void mygc::GarbageCollector::registerType(size_t id,
                                           bool completed) {
   std::lock_guard<std::mutex> guard(mGcMutex);
   try {
-    SingleType *descriptor = (SingleType *) mTypeMap.at(id).get();
+    auto *descriptor = (SingleType *) mTypeMap.at(id).get();
     descriptor->update(typeSize, std::move(indices), destructor, completed);
   } catch (const std::out_of_range &) {
     mTypeMap.insert({id, std::make_unique<SingleType>(typeSize, std::move(indices), destructor, completed)});
@@ -89,7 +90,7 @@ void mygc::GarbageCollector::registerType(size_t id,
 }
 void mygc::GarbageCollector::registerType(size_t id, size_t typeSize, size_t elementType, size_t counts) {
   try {
-    ArrayType *descriptor = (ArrayType *) mTypeMap.at(id).get();
+    auto *descriptor = (ArrayType *) mTypeMap.at(id).get();
     descriptor->update(typeSize, getTypeById(elementType), counts);
   } catch (const std::out_of_range &) {
     mTypeMap.insert({id, std::make_unique<ArrayType>(typeSize, getTypeById(elementType), counts)});
@@ -104,6 +105,10 @@ mygc::Record *mygc::GarbageCollector::collectRecordSTW(Record *root) {
   switch (root->location) {
     case Location::kYoungGeneration: {
       auto *young = (YoungRecord *) root;
+      if (!inHeap(young)) {
+        handledRecord = young;
+        break;
+      }
       OldRecord *old;
       if (!young->copied) {
 //        DLOG(INFO) << "copy alive objects " << ((Tester *) (young->data))->mId << std::endl;
@@ -178,11 +183,12 @@ void mygc::GarbageCollector::collectSTW() {
   }
   mOldGeneration.onScanEnd();
   mLargeObjects.onScanEnd();
-  mYoungGenerations.onScanEnd();
+  mYoungPool.putDirtyGeneration(std::move(tYoung));
+  tYoung = mYoungPool.getCleanGeneration();
   LOG(INFO) << "collecting finished" << std::endl;
 }
 bool mygc::GarbageCollector::inHeap(void *ptr) {
-  return mYoungGenerations.getMine()->inHeapLocked(ptr);
+  return getYoung()->inHeapLocked(ptr);
 }
 std::vector<size_t> mygc::GarbageCollector::getIndices(size_t typeId) {
   std::lock_guard<std::mutex> guard(mGcMutex);
@@ -196,6 +202,12 @@ std::vector<size_t> mygc::GarbageCollector::getIndices(size_t typeId) {
 std::set<mygc::GcReference *> mygc::GarbageCollector::getRoots() {
   std::lock_guard<std::mutex> guard(mGcMutex);
   return mGcRoots;
+}
+mygc::YoungGeneration *mygc::GarbageCollector::getYoung() {
+  if (!tYoung) {
+    tYoung = mYoungPool.getCleanGeneration();
+  }
+  return tYoung.get();
 }
 
 extern "C" void __cxa_pure_virtual() {

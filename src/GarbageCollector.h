@@ -14,7 +14,7 @@
 #include "YoungGenerationPool.h"
 #include "LargeObjects.h"
 #include "GcReference.h"
-#include "YoungGenerations.h"
+#include "YoungGeneration.h"
 
 namespace mygc {
 class GarbageCollector {
@@ -40,14 +40,16 @@ class GarbageCollector {
   void collectSTW();
   Record *collectRecordSTW(Record *root);
   void iterateChildren(mygc::SingleType *childType, Object *data);
-  void iterateArray(mygc::ArrayType* arrayType, Object *data);
+  void iterateArray(mygc::ArrayType *arrayType, Object *data);
   std::mutex mGcMutex;
   std::set<GcReference *> mGcRoots;
   std::set<pthread_t> mAttachedThreads;
   std::map<size_t, std::unique_ptr<ITypeDescriptor>> mTypeMap;
   OldGeneration mOldGeneration;
   LargeObjects mLargeObjects;
-  YoungGenerations mYoungGenerations;
+  YoungGenerationPool mYoungPool;
+  static thread_local std::unique_ptr<YoungGeneration> tYoung;
+  YoungGeneration* getYoung();
  public:
   //only used for testing
   std::vector<size_t> getIndices(size_t typeId);
