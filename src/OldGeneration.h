@@ -21,6 +21,7 @@ class OldGeneration {
   /// return true if marked, return false if record has already marked
   bool mark(OldRecord *record);
   void scan(OldRecord *record);
+  void pickNonTrivial(OldRecord *record);
   size_t getAllocatedSize();
  private:
   IBlock *mBlocks[13]{

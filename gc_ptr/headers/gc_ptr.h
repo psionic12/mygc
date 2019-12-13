@@ -37,7 +37,7 @@ class _AddressBase {
   static bool empty() {
     return getBases().empty();
   }
- private:
+ public:
   static std::vector<std::pair<void *, std::vector<void *>>> &getBases() {
     static thread_local std::vector<std::pair<void *, std::vector<void *>>> v;
     return v;
@@ -84,7 +84,7 @@ class gc_ptr {
   _Tp *operator->() {
     return get();
   }
-  static std::atomic<bool> mIndexing;
+  static bool mIndexing; // do not make it atomic, may calculate several time but save time for make_gc later
  private:
   GcReference mGcReference;
   static thread_local _ThreadRegister mThreadRegister;
@@ -97,7 +97,7 @@ class gc_ptr {
   }
 };
 template<typename _Tp>
-std::atomic<bool> gc_ptr<_Tp>::mIndexing(false);
+bool gc_ptr<_Tp>::mIndexing(false);
 template<typename _Tp>
 _TypeRegister<_Tp> gc_ptr<_Tp>::mTypeRegister;
 template<typename _Tp>
@@ -115,14 +115,15 @@ make_gc(_Args &&... __args) {
   GcReference reference;
   reference.gcAlloca(typeId);
   void *ptr = reference.getReference();
-  bool indexing = !completed && !gc_ptr<_Tp>::mIndexing;
-  if (indexing) {
+  bool shouldIndex = !completed && !gc_ptr<_Tp>::mIndexing;
+  if (shouldIndex) {
     gc_ptr<_Tp>::mIndexing = true;
     _AddressBase::push(ptr);
   }
-  auto *t = new(ptr) _Tp(std::forward<_Args>(__args)...);
-  if (!indexing) {
+  new(ptr) _Tp(std::forward<_Args>(__args)...);
+  if (shouldIndex) {
     auto &pair = _AddressBase::back();
+    auto &v = _AddressBase::getBases();
     void *base = pair.first;
     std::vector<size_t> offsets;
     for (auto *child : pair.second) {

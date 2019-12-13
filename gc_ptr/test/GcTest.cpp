@@ -14,7 +14,7 @@ std::vector<int> v2;
 
 class Tester {
  public:
-  Tester() : mChild(make_gc<Tester>()) {
+  Tester() {
 //    DLOG(INFO) << "start construct";
     mConstructorCalled = true;
     std::unique_lock<std::mutex> lock(mMutex);
@@ -39,11 +39,12 @@ class Tester {
   int getId() {
     return mId;
   }
+  gc_ptr<Tester> mChild;
  private:
   bool mConstructorCalled = false;
   char mPlaceHolder[512];
   int mId;
-  gc_ptr<Tester> mChild;
+
 };
 
 void worker2() {
@@ -51,6 +52,7 @@ void worker2() {
   gc_ptr<Tester> t;
   for (int i = 0; i < 10; i++) {
     t = make_gc<Tester>();
+    t->mChild = t;
   }
   for (int i = 0; i < 10; i++) {
     t = make_gc<Tester>();
@@ -71,6 +73,7 @@ TEST_F(GCTest, gcTest) {
   gc_ptr<Tester> t;
   for (int i = 0; i < 10; i++) {
     t = make_gc<Tester>();
+
     ASSERT_EQ(t->constructorCalled(), true);
   }
   for (int i = 0; i < 10; i++) {

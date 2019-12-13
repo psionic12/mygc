@@ -103,6 +103,7 @@ mygc::ITypeDescriptor *mygc::GarbageCollector::getTypeById(size_t id) {
   return mTypeMap.at(id).get();
 }
 mygc::Record *mygc::GarbageCollector::collectRecordSTW(Record *root) {
+  if (!root) return nullptr;
   Object *data = nullptr;
   Record *handledRecord = nullptr;
   switch (root->location) {
@@ -121,18 +122,22 @@ mygc::Record *mygc::GarbageCollector::collectRecordSTW(Record *root) {
           young->generation->getFinalizerList().remove(young);
         }
         young->forwardAddress = old;
+        data = old->data;
+        handledRecord = old;
+        break;
       } else {
-        old = young->forwardAddress;
+        return young->forwardAddress;
       }
-      data = old->data;
-      handledRecord = old;
-      break;
     }
     case Location::kOldGeneration: {
       auto *old = (OldRecord *) root;
-      mOldGeneration.scan(old);
-      handledRecord = old;
-      break;
+      if (mOldGeneration.mark(old)) {
+        mOldGeneration.pickNonTrivial(old);
+        handledRecord = old;
+        break;
+      } else {
+        return old;
+      }
     }
     case Location::kLargeObjects: {
       auto *large = (LargeRecord *) root;
@@ -154,6 +159,7 @@ mygc::Record *mygc::GarbageCollector::collectRecordSTW(Record *root) {
   return handledRecord;
 }
 void mygc::GarbageCollector::iterateChildren(mygc::SingleType *childType, Object *data) {
+  if (!data) return;
   const auto &indices = childType->getIndices();
   for (auto index : indices) {
     auto *ref = (GcReference *) (data + index);
@@ -162,6 +168,7 @@ void mygc::GarbageCollector::iterateChildren(mygc::SingleType *childType, Object
   }
 }
 void mygc::GarbageCollector::iterateArray(mygc::ArrayType *arrayType, mygc::Object *data) {
+  if (!data) return;
   auto counts = arrayType->getCounts();
   for (int i = 0; i < counts; i++) {
     Object *childData = data + i * arrayType->typeSize();

@@ -116,3 +116,9 @@ size_t mygc::OldGeneration::getAllocatedSize() {
   }
   return size;
 }
+void mygc::OldGeneration::pickNonTrivial(mygc::OldRecord *record) {
+  if (record->descriptor->nonTrivial()) {
+    mGrayList.remove(record);
+    mWhiteList.add(record);
+  }
+}
