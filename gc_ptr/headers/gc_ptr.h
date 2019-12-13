@@ -54,7 +54,8 @@ class _TypeRegister {
     ((_Tp *) t)->~_Tp();
   }
 };
-
+template<typename _Tp>
+struct _MakeGc;
 template<typename _Tp>
 class gc_ptr {
  public:
@@ -78,14 +79,14 @@ class gc_ptr {
   explicit gc_ptr(GcReference gcReference) : gc_ptr() {
     mGcReference = gcReference;
   }
-  _Tp *get() {
+  _Tp *operator->() {
     return (_Tp *) mGcReference.getReference();
   }
-  _Tp *operator->() {
-    return get();
-  }
-  static bool mIndexing; // do not make it atomic, may calculate several time but save time for make_gc later
  private:
+  template<typename _Up, typename... _Args>
+  friend typename _MakeGc<_Up>::__single_object
+  make_gc(_Args &&... __args);
+  static bool mIndexing; // do not make it atomic, may calculate several time but save time for make_gc later
   GcReference mGcReference;
   static thread_local _ThreadRegister mThreadRegister;
   static _TypeRegister<_Tp> mTypeRegister;
@@ -108,7 +109,7 @@ struct _MakeGc { typedef gc_ptr<_Tp> __single_object; };
 template<typename _Tp>
 struct _MakeGc<_Tp[]> { typedef gc_ptr<_Tp[]> __array; };
 template<typename _Tp, typename... _Args>
-inline typename _MakeGc<_Tp>::__single_object
+typename _MakeGc<_Tp>::__single_object
 make_gc(_Args &&... __args) {
   auto typeId = typeid(_Tp).hash_code();
   bool completed = GcReference::isCompletedDescriptor(typeId);
