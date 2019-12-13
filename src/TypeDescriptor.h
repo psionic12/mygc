@@ -55,21 +55,5 @@ class SingleType : public ITypeDescriptor {
   void (*mDestructor)(void *object);
   std::vector<size_t> mIndices;
 };
-class ArrayType : public ITypeDescriptor {
- public:
-  ArrayType(size_t typeSize, ITypeDescriptor *elementType, size_t counts);
-  ITypeDescriptor *getElementType() {
-    return mElementType;
-  }
-  size_t getCounts() {
-    return mCounts;
-  }
-  void callDestructor(Object *object) override;
-  void update(size_t typeSize, ITypeDescriptor *elementType, size_t counts);
- private:
-  bool nonTrivial() override;
-  ITypeDescriptor *mElementType;
-  size_t mCounts;
-};
 }//namespace mygc
 #endif //MYGC_TYPEDESCRIPTOR_H

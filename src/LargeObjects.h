@@ -16,7 +16,7 @@ class LargeObjects {
  public:
   LargeObjects();
   ~LargeObjects();
-  LargeRecord *allocate(ITypeDescriptor *descriptor);
+  mygc::LargeRecord *allocate(mygc::ITypeDescriptor *descriptor, size_t counts);
   void onScanEnd();
   void mark(LargeRecord *record);
  private:

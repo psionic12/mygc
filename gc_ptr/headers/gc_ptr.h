@@ -129,7 +129,7 @@ make_gc(_Args &&... __args) {
   auto typeId = typeid(_Tp).hash_code();
   bool completed = GcReference::isCompletedDescriptor(typeId);
   GcReference reference;
-  reference.gcAlloca(typeId);
+  reference.gcAllocate(typeId, 0);
   void *ptr = reference.getReference();
   bool shouldIndex = !completed && !gc_ptr<_Tp>::mIndexing;
   if (shouldIndex) {

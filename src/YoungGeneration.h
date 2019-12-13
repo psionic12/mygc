@@ -14,7 +14,7 @@ namespace mygc {
 class YoungGeneration {
  public:
   YoungGeneration();
-  mygc::YoungRecord *allocate(ITypeDescriptor *descriptor);
+  mygc::YoungRecord *allocate(ITypeDescriptor *descriptor, size_t counts);
   YoungNonTrivialList &getFinalizerList() {
     return mFinalizerList;
   }

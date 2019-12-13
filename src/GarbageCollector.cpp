@@ -28,20 +28,20 @@ mygc::GarbageCollector::GarbageCollector() : mRemain(MYGC_TOTAL_SIZE) {
 //  LOG(INFO) << "young generation heap size: " << YoungGeneration::defaultSize() << std::endl;
 }
 
-mygc::YoungRecord *mygc::GarbageCollector::New(ITypeDescriptor *descriptor) {
-  auto *ptr = getYoung()->allocate(descriptor);
+mygc::YoungRecord *mygc::GarbageCollector::New(ITypeDescriptor *descriptor, size_t counts) {
+  auto *ptr = getYoung()->allocate(descriptor, 0);
   if (!ptr) {
     {
       std::lock_guard<std::mutex> guard(mGcMutex);
       // try again in case a gc has finished
-      ptr = getYoung()->allocate(descriptor);
+      ptr = getYoung()->allocate(descriptor, 0);
       if (!ptr) {
         stopTheWorldLocked();
         collectSTW();
         restartTheWorldLocked();
       }
     }
-    ptr = getYoung()->allocate(descriptor);
+    ptr = getYoung()->allocate(descriptor, 0);
     if (!ptr) {
       throw std::runtime_error("mygc is out of memory");
     }
@@ -91,14 +91,6 @@ void mygc::GarbageCollector::registerType(size_t id,
     mTypeMap.insert({id, std::make_unique<SingleType>(typeSize, std::move(indices), destructor, completed)});
   }
 }
-void mygc::GarbageCollector::registerType(size_t id, size_t typeSize, size_t elementType, size_t counts) {
-  try {
-    auto *descriptor = (ArrayType *) mTypeMap.at(id).get();
-    descriptor->update(typeSize, getTypeById(elementType), counts);
-  } catch (const std::out_of_range &) {
-    mTypeMap.insert({id, std::make_unique<ArrayType>(typeSize, getTypeById(elementType), counts)});
-  }
-}
 mygc::ITypeDescriptor *mygc::GarbageCollector::getTypeById(size_t id) {
   return mTypeMap.at(id).get();
 }
@@ -145,19 +137,15 @@ mygc::Record *mygc::GarbageCollector::collectRecordSTW(Record *root) {
       auto *large = (LargeRecord *) root;
       mLargeObjects.mark(large);
       handledRecord = large;
+      data = large->data;
       break;
     }
   }
 
-  auto *descriptor = handledRecord->descriptor;
-  if (auto *singleType = dynamic_cast<SingleType *>(descriptor)) {
-    iterateChildren(singleType, data);
-  } else if (auto *arrayType = dynamic_cast<ArrayType *>(descriptor)) {
-    iterateArray(arrayType, data);
-  } else {
-    throw std::runtime_error("unknown type");
+  auto *singleType = dynamic_cast<SingleType *>(handledRecord->descriptor);
+  for (int i = 0; i <= handledRecord->counts; i++) {
+    iterateChildren(singleType, data + (i * singleType->typeSize()));
   }
-
   return handledRecord;
 }
 void mygc::GarbageCollector::iterateChildren(mygc::SingleType *childType, Object *data) {
@@ -169,21 +157,21 @@ void mygc::GarbageCollector::iterateChildren(mygc::SingleType *childType, Object
     ref->update(childHandledRecord);
   }
 }
-void mygc::GarbageCollector::iterateArray(mygc::ArrayType *arrayType, mygc::Object *data) {
-  if (!data) return;
-  auto counts = arrayType->getCounts();
-  for (int i = 0; i < counts; i++) {
-    Object *childData = data + i * arrayType->typeSize();
-    auto *elementType = arrayType->getElementType();
-    if (auto *singleType = dynamic_cast<SingleType *>(elementType)) {
-      iterateChildren(singleType, childData);
-    } else if (auto *childArrayType = dynamic_cast<ArrayType *>(elementType)) {
-      iterateArray(childArrayType, childData);
-    } else {
-      throw std::runtime_error("unknown type");
-    }
-  }
-}
+//void mygc::GarbageCollector::iterateArray(mygc::ArrayType *arrayType, mygc::Object *data) {
+//  if (!data) return;
+//  auto counts = arrayType->getCounts();
+//  for (int i = 0; i < counts; i++) {
+//    Object *childData = data + i * arrayType->typeSize();
+//    auto *elementType = arrayType->getElementType();
+//    if (auto *singleType = dynamic_cast<SingleType *>(elementType)) {
+//      iterateChildren(singleType, childData);
+//    } else if (auto *childArrayType = dynamic_cast<ArrayType *>(elementType)) {
+//      iterateArray(childArrayType, childData);
+//    } else {
+//      throw std::runtime_error("unknown type");
+//    }
+//  }
+//}
 void mygc::GarbageCollector::collectSTW() {
 //  GCLOG("start collecting");
   for (auto *ref : mGcRoots) {

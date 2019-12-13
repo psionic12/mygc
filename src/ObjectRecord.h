@@ -22,6 +22,7 @@ struct NonTrivialNode {
 struct Record {
   Location location = Location::kYoungGeneration;
   ITypeDescriptor *descriptor = nullptr;
+  size_t counts = 1;
 };
 
 struct OldRecord : Record {

@@ -26,6 +26,7 @@ mygc::OldRecord *mygc::OldGeneration::copyFromYoungSTW(YoungRecord *from) {
   record->index = pair.first;
   record->location = Location::kOldGeneration;
   record->descriptor = from->descriptor;
+  record->counts = from->counts;
   memcpy(record->data, from->data, descriptor->typeSize());
   if (record->descriptor->nonTrivial()) {
     mWhiteList.add(record);

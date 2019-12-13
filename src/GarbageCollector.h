@@ -19,7 +19,7 @@
 namespace mygc {
 class GarbageCollector {
  public:
-  YoungRecord *New(ITypeDescriptor *descriptor);
+  YoungRecord *New(ITypeDescriptor *descriptor, size_t counts);
   bool inHeap(void *ptr);
   void addRoots(GcReference *ptr);
   void removeRoots(GcReference *ptr);
@@ -31,7 +31,6 @@ class GarbageCollector {
                     std::vector<size_t> &&indices,
                     void (*destructor)(void *object),
                     bool completed);
-  void registerType(size_t id, size_t typeSize, size_t elementType, size_t counts);
   ITypeDescriptor *getTypeById(size_t id);
   bool willOom(size_t allocaSize);
   void updateTotalSize();
@@ -42,7 +41,7 @@ class GarbageCollector {
   void collectSTW();
   Record *collectRecordSTW(Record *root);
   void iterateChildren(mygc::SingleType *childType, Object *data);
-  void iterateArray(mygc::ArrayType *arrayType, Object *data);
+//  void iterateArray(mygc::ArrayType *arrayType, Object *data);
   std::mutex mGcMutex;
   std::set<GcReference *> mGcRoots;
   std::set<pthread_t> mAttachedThreads;

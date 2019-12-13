@@ -19,6 +19,6 @@ TEST_F(GcTest, test) {
   GcReference gcReference;
   GcReference::addRoots(&gcReference);
   for (int i = 0; i < 10; i++) {
-    gcReference.gcAlloca(1);
+    gcReference.gcAllocate(1);
   }
 }

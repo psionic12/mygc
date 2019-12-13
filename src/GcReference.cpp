@@ -7,9 +7,9 @@
 #include "GcReference.h"
 #include "GarbageCollector.h"
 
-void mygc::GcReference::gcAlloca(size_t typeId) {
+void mygc::GcReference::gcAllocate(size_t typeId, size_t counts) {
   auto &collector = mygc::GarbageCollector::getCollector();
-  mPtr = collector.New(collector.getTypeById(typeId));
+  mPtr = collector.New(collector.getTypeById(typeId), 0);
 }
 void mygc::GcReference::update(mygc::Record *newRecord) {
   mPtr = newRecord;
@@ -33,11 +33,6 @@ void mygc::GcReference::registerType(size_t typeId,
                                      bool completed = true) {
   auto &collector = mygc::GarbageCollector::getCollector();
   collector.registerType(typeId, typeSize, std::move(indices), destructor, completed);
-}
-
-void mygc::GcReference::registerType(size_t id, size_t typeSize, size_t elementType, size_t counts) {
-  auto &collector = mygc::GarbageCollector::getCollector();
-  collector.registerType(id, typeSize, elementType, counts);
 }
 bool mygc::GcReference::isCompletedDescriptor(size_t typeId) {
   auto &collector = mygc::GarbageCollector::getCollector();
