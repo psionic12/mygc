@@ -37,7 +37,8 @@ class GcReference {
   static std::vector<size_t> getIndices(size_t typeId);
   static std::set<pthread_t> getAttachedThreads();
   static std::set<GcReference *> getRoots();
-  static void collect();
+  static void collect();// do not use this to manually collect objects,
+                        // this only collect the generation which belongs to the caller thread
 };
 
 }//namespace mygc

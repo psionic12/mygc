@@ -62,6 +62,7 @@ void worker2() {
   }
   DLOG(INFO) << "t is " << t->getId() << std::endl;
   t = nullptr;
+  GcReference::collect();
 }
 
 TEST_F(GCTest, gcTest) {
