@@ -15,7 +15,7 @@ class Tester {
 };
 
 TEST_F(GcTest, test) {
-  GcReference::registeredType(1, 1024, {}, nullptr, true);
+  GcReference::registerType(1, 1024, {}, nullptr, true);
   GcReference gcReference;
   GcReference::addRoots(&gcReference);
   for (int i = 0; i < 10; i++) {

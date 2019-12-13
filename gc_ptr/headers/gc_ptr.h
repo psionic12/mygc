@@ -51,7 +51,7 @@ class _TypeRegister {
   }
   static void registerType(std::vector<size_t> &&indices = {}, bool complete = false) {
     size_t typeId = typeid(_Tp).hash_code();
-    GcReference::registeredType(typeId, sizeof(_Tp), std::move(indices), nullptr, complete);
+    GcReference::registerType(typeId, sizeof(_Tp), std::move(indices), nullptr, complete);
   }
 };
 template<typename _Tp>
@@ -62,7 +62,7 @@ class _TypeRegister<_Tp, typename std::enable_if_t<!std::is_trivially_destructib
   }
   static void registerType(std::vector<size_t> &&indices = {}, bool complete = false) {
     size_t typeId = typeid(_Tp).hash_code();
-    GcReference::registeredType(typeId, sizeof(_Tp), std::move(indices), &_TypeRegister::destruct, complete);
+    GcReference::registerType(typeId, sizeof(_Tp), std::move(indices), &_TypeRegister::destruct, complete);
   }
   static void destruct(void *t) {
     ((_Tp *) t)->~_Tp();
@@ -149,6 +149,11 @@ make_gc(_Args &&... __args) {
     _AddressBase::pop();
   }
   return gc_ptr<_Tp>(reference);
+}
+template<typename _Tp>
+inline typename _MakeGc<_Tp>::__array
+make_unique(size_t __num) {
+
 }
 }//namespace mygc
 

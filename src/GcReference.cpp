@@ -26,11 +26,11 @@ void *mygc::GcReference::getReference() {
 mygc::Record *mygc::GcReference::getRecord() {
   return mPtr;
 }
-void mygc::GcReference::registeredType(size_t typeId,
-                                       size_t typeSize,
-                                       std::vector<size_t> &&indices,
-                                       void (*destructor)(void *),
-                                       bool completed = true) {
+void mygc::GcReference::registerType(size_t typeId,
+                                     size_t typeSize,
+                                     std::vector<size_t> &&indices,
+                                     void (*destructor)(void *),
+                                     bool completed = true) {
   auto &collector = mygc::GarbageCollector::getCollector();
   collector.registerType(typeId, typeSize, std::move(indices), destructor, completed);
 }

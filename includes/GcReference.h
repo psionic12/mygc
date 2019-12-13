@@ -21,11 +21,11 @@ class GcReference {
   Record *getRecord();
   void update(Record *newRecord);
   static bool isInYoungGeneration(void *ptr);
-  static void registeredType(size_t typeId,
-                             size_t typeSize,
-                             std::vector<size_t> &&indices,
-                             void (*destructor)(void *object),
-                             bool completed);
+  static void registerType(size_t typeId,
+                           size_t typeSize,
+                           std::vector<size_t> &&indices,
+                           void (*destructor)(void *object),
+                           bool completed);
   static void registerType(size_t id, size_t typeSize, size_t elementType, size_t counts);
   static bool isCompletedDescriptor(size_t typeId);
   static void addRoots(GcReference *ptr);
