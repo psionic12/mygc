@@ -58,6 +58,7 @@ class GarbageCollector {
   std::vector<size_t> getIndices(size_t typeId);
   std::set<pthread_t> getAttachedThreads();
   std::set<GcReference *> getRoots();
+  void collect();
 };
 
 } //namespace mygc

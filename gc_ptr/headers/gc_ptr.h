@@ -43,12 +43,26 @@ class _AddressBase {
     return v;
   }
 };
-template<typename _Tp>
+template<typename _Tp, typename = void>
 class _TypeRegister {
  public:
   _TypeRegister() {
+    registerType();
+  }
+  static void registerType(std::vector<size_t> &&indices = {}, bool complete = false) {
     size_t typeId = typeid(_Tp).hash_code();
-    GcReference::registeredType(typeId, sizeof(_Tp), {}, &_TypeRegister::destruct, false);
+    GcReference::registeredType(typeId, sizeof(_Tp), std::move(indices), nullptr, complete);
+  }
+};
+template<typename _Tp>
+class _TypeRegister<_Tp, typename std::enable_if_t<!std::is_trivially_destructible<_Tp>::value>> {
+ public:
+  _TypeRegister() {
+    registerType();
+  }
+  static void registerType(std::vector<size_t> &&indices = {}, bool complete = false) {
+    size_t typeId = typeid(_Tp).hash_code();
+    GcReference::registeredType(typeId, sizeof(_Tp), std::move(indices), &_TypeRegister::destruct, complete);
   }
   static void destruct(void *t) {
     ((_Tp *) t)->~_Tp();
@@ -64,21 +78,17 @@ class gc_ptr {
     if (!GcReference::isInYoungGeneration(this)) {
       GcReference::addRoots(&mGcReference);
     }
-    createIndices();
   }
   gc_ptr &
   operator=(nullptr_t) noexcept {
     mGcReference.update(nullptr);
     return *this;
   }
-  ~gc_ptr() {
-    if (!GcReference::isInYoungGeneration(this)) {
-      GcReference::removeRoots(&mGcReference);
-    }
-  }
-  explicit gc_ptr(GcReference gcReference) : gc_ptr() {
-    mGcReference = gcReference;
-  }
+//  ~gc_ptr() {
+//    if (!GcReference::isInYoungGeneration(this)) {
+//      GcReference::removeRoots(&mGcReference);
+//    }
+//  }
   _Tp *operator->() {
     return (_Tp *) mGcReference.getReference();
   }
@@ -86,21 +96,25 @@ class gc_ptr {
   template<typename _Up, typename... _Args>
   friend typename _MakeGc<_Up>::__single_object
   make_gc(_Args &&... __args);
+  //this is used for make_gc(), which do not add roots, while calculate indices
+  explicit gc_ptr(GcReference gcReference) {
+    mThreadRegister;
+    mGcReference = gcReference;
+    createIndices();
+  }
   static bool mIndexing; // do not make it atomic, may calculate several time but save time for make_gc later
   GcReference mGcReference;
   static thread_local _ThreadRegister mThreadRegister;
-  static _TypeRegister<_Tp> mTypeRegister;
   void createIndices() {
-    mTypeRegister;
     if (!_AddressBase::empty() && GcReference::isInYoungGeneration(this)) {
       _AddressBase::back().second.push_back(this);
     }
   }
 };
 template<typename _Tp>
-bool gc_ptr<_Tp>::mIndexing(false);
+class gc_ptr<_Tp[]> {};
 template<typename _Tp>
-_TypeRegister<_Tp> gc_ptr<_Tp>::mTypeRegister;
+bool gc_ptr<_Tp>::mIndexing(false);
 template<typename _Tp>
 thread_local _ThreadRegister gc_ptr<_Tp>::mThreadRegister;
 
@@ -111,6 +125,7 @@ struct _MakeGc<_Tp[]> { typedef gc_ptr<_Tp[]> __array; };
 template<typename _Tp, typename... _Args>
 typename _MakeGc<_Tp>::__single_object
 make_gc(_Args &&... __args) {
+  static _TypeRegister<_Tp> mTypeRegister;
   auto typeId = typeid(_Tp).hash_code();
   bool completed = GcReference::isCompletedDescriptor(typeId);
   GcReference reference;
@@ -130,11 +145,7 @@ make_gc(_Args &&... __args) {
     for (auto *child : pair.second) {
       offsets.push_back((char *) child - (char *) base);
     }
-    GcReference::registeredType(typeId,
-                                sizeof(_Tp),
-                                std::move(offsets),
-                                &_TypeRegister<_Tp>::destruct,
-                                true);
+    _TypeRegister<_Tp>::registerType(std::move(offsets), true);
     _AddressBase::pop();
   }
   return gc_ptr<_Tp>(reference);

@@ -3,6 +3,7 @@
 //
 #include "YoungGenerationPool.h"
 #include "GarbageCollector.h"
+#include "Tools.h"
 void mygc::YoungGenerationPool::scavenge() {
   while (true) {
     std::unique_ptr<YoungGeneration> generation = nullptr;
@@ -19,7 +20,7 @@ void mygc::YoungGenerationPool::scavenge() {
 
     auto *ptr = generation->getFinalizerList().getHead();
     while (ptr) {
-//      DLOG(INFO) << "young: call destructor on: " << ((Tester *) ptr->data)->mId << "(" << ptr << ")" << std::endl;
+//      GCLOG("young: call destructor on: %u", ptr);
       ptr->descriptor->callDestructor(ptr->data);
       ptr = ptr->nonTrivialNode.next;
     }

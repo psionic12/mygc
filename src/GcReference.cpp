@@ -26,9 +26,6 @@ void *mygc::GcReference::getReference() {
 mygc::Record *mygc::GcReference::getRecord() {
   return mPtr;
 }
-mygc::GcReference::~GcReference() {
-  mPtr = nullptr;
-}
 void mygc::GcReference::registeredType(size_t typeId,
                                        size_t typeSize,
                                        std::vector<size_t> &&indices,
@@ -77,4 +74,8 @@ std::set<pthread_t> mygc::GcReference::getAttachedThreads() {
 std::set<mygc::GcReference *> mygc::GcReference::getRoots() {
   auto &collector = mygc::GarbageCollector::getCollector();
   return collector.getRoots();
+}
+void mygc::GcReference::collect() {
+  auto &collector = mygc::GarbageCollector::getCollector();
+  collector.collect();
 }

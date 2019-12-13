@@ -103,28 +103,30 @@ mygc::ITypeDescriptor *mygc::GarbageCollector::getTypeById(size_t id) {
   return mTypeMap.at(id).get();
 }
 mygc::Record *mygc::GarbageCollector::collectRecordSTW(Record *root) {
-  if (!root) return nullptr;
+//  if (!root) return nullptr;
   Object *data = nullptr;
   Record *handledRecord = nullptr;
   switch (root->location) {
     case Location::kYoungGeneration: {
       auto *young = (YoungRecord *) root;
-      if (!inHeap(young)) {
-        handledRecord = young;
-        break;
-      }
       OldRecord *old;
       if (!young->copied) {
 //        DLOG(INFO) << "copy alive objects " << ((Tester *) (young->data))->mId << std::endl;
-        old = mOldGeneration.copyFromYoungSTW(young);
         young->copied = true;
-        if (young->descriptor->nonTrivial()) {
-          young->generation->getFinalizerList().remove(young);
+        if (!inHeap(young)) {
+          //we do not move object in other young generations, but we should iterate the child.
+          handledRecord = young;
+          break;
+        } else {
+          old = mOldGeneration.copyFromYoungSTW(young);
+          if (young->descriptor->nonTrivial()) {
+            young->generation->getFinalizerList().remove(young);
+          }
+          young->forwardAddress = old;
+          data = old->data;
+          handledRecord = old;
+          break;
         }
-        young->forwardAddress = old;
-        data = old->data;
-        handledRecord = old;
-        break;
       } else {
         return young->forwardAddress;
       }
@@ -224,6 +226,12 @@ bool mygc::GarbageCollector::willOom(size_t allocaSize) {
 }
 void mygc::GarbageCollector::updateTotalSize() {
   mRemain = MYGC_TOTAL_SIZE - mOldGeneration.getAllocatedSize();
+}
+void mygc::GarbageCollector::collect() {
+  stopTheWorldLocked();
+  collectSTW();
+  restartTheWorldLocked();
+
 }
 
 extern "C" void __cxa_pure_virtual() {

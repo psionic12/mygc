@@ -31,7 +31,7 @@ class Tester {
     std::unique_lock<std::mutex> lock(mMutex);
     v1[mId] -= 1;
     lock.unlock();
-//    DLOG(INFO) << "~Tester: " << mId << "(" << this << ")" << std::endl;
+    DLOG(INFO) << "~Tester: " << mId << "(" << this << ")" << std::endl;
   }
   bool constructorCalled() {
     return mConstructorCalled;
@@ -52,7 +52,7 @@ void worker2() {
   gc_ptr<Tester> t;
   for (int i = 0; i < 10; i++) {
     t = make_gc<Tester>();
-    t->mChild = t;
+//    t->mChild = t;
   }
   for (int i = 0; i < 10; i++) {
     t = make_gc<Tester>();
@@ -61,6 +61,7 @@ void worker2() {
     t = make_gc<Tester>();
   }
   DLOG(INFO) << "t is " << t->getId() << std::endl;
+  t = nullptr;
 }
 
 TEST_F(GCTest, gcTest) {
@@ -87,12 +88,13 @@ TEST_F(GCTest, gcTest) {
   }
   DLOG(INFO) << "t is " << t->getId() << std::endl;
   t = nullptr;
+  GcReference::collect();
   std::this_thread::sleep_for(std::chrono::seconds(3));
   for (int i = 0; i < v2.size(); i++) {
     ASSERT_EQ(v2[i], i) << " : v2[" << i << "] is " << v2[i] << std::endl;
   }
   for (int i = 0; i < v1.size(); i++) {
-    ASSERT_TRUE(v1[i] == 1 || v1[i] == 0) << " : v1[" << i << "] is " << v1[i] << std::endl;
+    ASSERT_TRUE(v1[i] == 0) << " : v1[" << i << "] is " << v1[i] << std::endl;
   }
   DLOG(INFO) << "test end" << std::endl;
 }

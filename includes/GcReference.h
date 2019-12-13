@@ -17,7 +17,6 @@ class GcReference {
   Record *mPtr = nullptr;
  public:
   void gcAlloca(size_t typeId);
-  virtual ~GcReference();
   void *getReference();
   Record *getRecord();
   void update(Record *newRecord);
@@ -38,6 +37,7 @@ class GcReference {
   static std::vector<size_t> getIndices(size_t typeId);
   static std::set<pthread_t> getAttachedThreads();
   static std::set<GcReference *> getRoots();
+  static void collect();
 };
 
 }//namespace mygc
