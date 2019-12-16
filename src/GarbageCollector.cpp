@@ -29,24 +29,30 @@ mygc::GarbageCollector::GarbageCollector() : mRemain(MYGC_TOTAL_SIZE) {
 }
 
 mygc::YoungRecord *mygc::GarbageCollector::New(ITypeDescriptor *descriptor, size_t counts) {
-  auto *ptr = getYoung()->allocate(descriptor, 0);
-  if (!ptr) {
-    {
-      std::lock_guard<std::mutex> guard(mGcMutex);
-      // try again in case a gc has finished
-      ptr = getYoung()->allocate(descriptor, 0);
+  size_t size = sizeof(YoungRecord) + counts * descriptor->typeSize();
+  if (size < OldGeneration::getMaxBlockSize()) {
+    auto *ptr = getYoung()->allocate(descriptor, counts);
+    if (!ptr) {
+      {
+        std::lock_guard<std::mutex> guard(mGcMutex);
+        // try again in case a gc has finished
+        ptr = getYoung()->allocate(descriptor, counts);
+        if (!ptr) {
+          stopTheWorldLocked();
+          collectSTW();
+          restartTheWorldLocked();
+        }
+      }
+      ptr = getYoung()->allocate(descriptor, counts);
       if (!ptr) {
-        stopTheWorldLocked();
-        collectSTW();
-        restartTheWorldLocked();
+        throw std::runtime_error("mygc is out of memory");
       }
     }
-    ptr = getYoung()->allocate(descriptor, 0);
-    if (!ptr) {
-      throw std::runtime_error("mygc is out of memory");
-    }
+    return ptr;
+  } else {
+    mLargeObjects.allocate(descriptor, counts);
   }
-  return ptr;
+
 }
 void mygc::GarbageCollector::addRoots(GcReference *ptr) {
   std::lock_guard<std::mutex> guard(mGcMutex);
@@ -95,7 +101,7 @@ mygc::ITypeDescriptor *mygc::GarbageCollector::getTypeById(size_t id) {
   return mTypeMap.at(id).get();
 }
 mygc::Record *mygc::GarbageCollector::collectRecordSTW(Record *root) {
-//  if (!root) return nullptr;
+  if (!root) return nullptr;
   Object *data = nullptr;
   Record *handledRecord = nullptr;
   switch (root->location) {
@@ -143,7 +149,7 @@ mygc::Record *mygc::GarbageCollector::collectRecordSTW(Record *root) {
   }
 
   auto *singleType = dynamic_cast<SingleType *>(handledRecord->descriptor);
-  for (int i = 0; i <= handledRecord->counts; i++) {
+  for (int i = 0; i < handledRecord->counts; i++) {
     iterateChildren(singleType, data + (i * singleType->typeSize()));
   }
   return handledRecord;
@@ -157,21 +163,6 @@ void mygc::GarbageCollector::iterateChildren(mygc::SingleType *childType, Object
     ref->update(childHandledRecord);
   }
 }
-//void mygc::GarbageCollector::iterateArray(mygc::ArrayType *arrayType, mygc::Object *data) {
-//  if (!data) return;
-//  auto counts = arrayType->getCounts();
-//  for (int i = 0; i < counts; i++) {
-//    Object *childData = data + i * arrayType->typeSize();
-//    auto *elementType = arrayType->getElementType();
-//    if (auto *singleType = dynamic_cast<SingleType *>(elementType)) {
-//      iterateChildren(singleType, childData);
-//    } else if (auto *childArrayType = dynamic_cast<ArrayType *>(elementType)) {
-//      iterateArray(childArrayType, childData);
-//    } else {
-//      throw std::runtime_error("unknown type");
-//    }
-//  }
-//}
 void mygc::GarbageCollector::collectSTW() {
 //  GCLOG("start collecting");
   for (auto *ref : mGcRoots) {

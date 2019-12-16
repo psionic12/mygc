@@ -11,8 +11,14 @@
 
 mygc::OldRecord *mygc::OldGeneration::copyFromYoungSTW(YoungRecord *from) {
   auto *descriptor = from->descriptor;
+  size_t totalSize = sizeof(OldRecord) + descriptor->typeSize() * from->counts;
   // choose which block to use first
-  auto blockIndex = descriptor->getBlockIndex();
+  int blockIndex;
+  if (from->counts == 1) {
+    blockIndex = descriptor->getBlockIndex();
+  } else {
+    blockIndex = Tools::getLastOneFromRight(totalSize);
+  }
   auto *block = mBlocks[blockIndex];
   auto pair = block->getUnusedAndMark([](size_t size) {
     if (GarbageCollector::getCollector().willOom(size)) {
@@ -27,7 +33,7 @@ mygc::OldRecord *mygc::OldGeneration::copyFromYoungSTW(YoungRecord *from) {
   record->location = Location::kOldGeneration;
   record->descriptor = from->descriptor;
   record->counts = from->counts;
-  memcpy(record->data, from->data, descriptor->typeSize());
+  memcpy(record->data, from->data, totalSize);
   if (record->descriptor->nonTrivial()) {
     mWhiteList.add(record);
   }
@@ -65,7 +71,13 @@ void mygc::OldGeneration::onScanEnd() {
   mGrayList = std::move(mWhiteList);
 }
 bool mygc::OldGeneration::mark(mygc::OldRecord *record) {
-  auto blockIndex = record->descriptor->getBlockIndex();
+  int blockIndex;
+  auto *descriptor = record->descriptor;
+  if (record->counts == 1) {
+    blockIndex = descriptor->getBlockIndex();
+  } else {
+    blockIndex = Tools::getLastOneFromRight(sizeof(OldRecord) + descriptor->typeSize() * record->counts);
+  }
   auto block = mBlocks[blockIndex];
   if (!block->isMarked(record->index)) {
     block->mark(record->index);
@@ -84,7 +96,10 @@ void mygc::OldGeneration::scavenge() {
       record = mBlackList.getHead();
     }
     lock.unlock();
-    record->descriptor->callDestructor(record->data);
+    for (int i = 0; i < record->counts; i++) {
+      record->descriptor->callDestructor(record->data + i * record->descriptor->typeSize());
+    }
+
     lock.lock();
     mBlackList.remove(record);
     lock.unlock();
@@ -99,14 +114,6 @@ mygc::OldGeneration::~OldGeneration() {
     delete block;
   }
   mScavenger.join();
-}
-void mygc::OldGeneration::scan(mygc::OldRecord *record) {
-  if (mark(record)) {
-    if (record->descriptor->nonTrivial()) {
-      mGrayList.remove(record);
-      mWhiteList.add(record);
-    }
-  }
 }
 size_t mygc::OldGeneration::getAllocatedSize() {
   size_t size = 0;

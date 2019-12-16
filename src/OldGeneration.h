@@ -20,9 +20,11 @@ class OldGeneration {
   void onScanEnd();
   /// return true if marked, return false if record has already marked
   bool mark(OldRecord *record);
-  void scan(OldRecord *record);
   void pickNonTrivial(OldRecord *record);
   size_t getAllocatedSize();
+  static inline constexpr size_t getMaxBlockSize() {
+    return 1 << 12;
+  }
  private:
   IBlock *mBlocks[13]{
       nullptr,

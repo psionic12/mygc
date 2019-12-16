@@ -3,13 +3,11 @@
 //
 #include "YoungGeneration.h"
 #include "ObjectRecord.h"
+#include "OldGeneration.h"
 
-#ifndef YOUNG_GENERATION_SIZE
-#define YOUNG_GENERATION_SIZE 2 << 12
-#endif
-mygc::YoungGeneration::YoungGeneration() : mHeap(YOUNG_GENERATION_SIZE) {}
+mygc::YoungGeneration::YoungGeneration() : mHeap(OldGeneration::getMaxBlockSize()) {}
 mygc::YoungRecord *mygc::YoungGeneration::allocate(ITypeDescriptor *descriptor, size_t counts) {
-  auto *record = (YoungRecord *) mHeap.allocate(sizeof(YoungRecord) + descriptor->typeSize());
+  auto *record = (YoungRecord *) mHeap.allocate(sizeof(YoungRecord) + descriptor->typeSize() * counts);
   if (!record) return nullptr;
   record->location = Location::kYoungGeneration;
   record->descriptor = descriptor;
@@ -26,7 +24,7 @@ bool mygc::YoungGeneration::inHeapLocked(void *ptr) {
   return mHeap.inHeapLocked(ptr);
 }
 size_t mygc::YoungGeneration::defaultSize() {
-  return YOUNG_GENERATION_SIZE;
+  return OldGeneration::getMaxBlockSize();
 }
 void mygc::YoungGeneration::reset() {
   mHeap.reset();

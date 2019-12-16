@@ -9,7 +9,7 @@
 
 void mygc::GcReference::gcAllocate(size_t typeId, size_t counts) {
   auto &collector = mygc::GarbageCollector::getCollector();
-  mPtr = collector.New(collector.getTypeById(typeId), 0);
+  mPtr = collector.New(collector.getTypeById(typeId), counts);
 }
 void mygc::GcReference::update(mygc::Record *newRecord) {
   mPtr = newRecord;

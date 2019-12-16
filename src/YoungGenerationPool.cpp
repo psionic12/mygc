@@ -21,7 +21,9 @@ void mygc::YoungGenerationPool::scavenge() {
     auto *ptr = generation->getFinalizerList().getHead();
     while (ptr) {
 //      GCLOG("young: call destructor on: %u", ptr);
-      ptr->descriptor->callDestructor(ptr->data);
+      for (int i = 0; i < ptr->counts; i++) {
+        ptr->descriptor->callDestructor(ptr->data + i * ptr->descriptor->typeSize());
+      }
       ptr = ptr->nonTrivialNode.next;
     }
     generation->reset();

@@ -24,7 +24,9 @@ void mygc::LargeObjects::scavenge() {
     }
     lock.unlock();
     if (record->descriptor->nonTrivial()) {
-      record->descriptor->callDestructor(record->data);
+      for (int i = 0; i < record->counts; i++) {
+        record->descriptor->callDestructor(record->data + i * record->descriptor->typeSize());
+      }
     }
     free(record);
     lock.lock();

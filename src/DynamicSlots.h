@@ -16,7 +16,8 @@ class DynamicSlots {
     size_t base = Tools::getLastOneFromRight(naturalIndex) - 1;
     while (mSlots.size() <= base) {
       size_t requiredSize = 1u << mSlots.size();
-      f(requiredSize);
+      if(f) {f(requiredSize);}
+
       mSlots.push_back(new SlotType[requiredSize]);
     }
     size_t offset = naturalIndex & ~(1ul << base);
