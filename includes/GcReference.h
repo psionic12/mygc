@@ -16,6 +16,8 @@ class GcReference {
  private:
   Record *mPtr = nullptr;
  public:
+  GcReference() = default;
+  GcReference(Record *ptr);
   void gcAllocate(size_t typeId, size_t counts = 1);
   void *getReference();
   Record *getRecord();
@@ -31,13 +33,16 @@ class GcReference {
   static void removeRoots(GcReference *ptr);
   static void attachThread(pthread_t thread);
   static void detachThread(pthread_t thread);
+  explicit operator bool() const noexcept {
+    return mPtr != nullptr;
+  }
 
   // used for test
   static std::vector<size_t> getIndices(size_t typeId);
   static std::set<pthread_t> getAttachedThreads();
   static std::set<GcReference *> getRoots();
   static void collect();// do not use this to manually collect objects,
-                        // this only collect the generation which belongs to the caller thread
+  // this only collect the generation which belongs to the caller thread
 };
 
 }//namespace mygc

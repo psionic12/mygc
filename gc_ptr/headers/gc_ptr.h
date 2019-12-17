@@ -13,6 +13,7 @@
 #include <type_traits>
 #include <atomic>
 #include "GcReference.h"
+
 namespace mygc {
 class _ThreadRegister {
  public:
@@ -77,29 +78,35 @@ template<typename _Tp>
 class __gc_ptr_impl {
  public:
   __gc_ptr_impl() {
-    mThreadRegister;
+    thread_local _ThreadRegister threadRegister;
     if (!GcReference::isInYoungGeneration(this)) {
       GcReference::addRoots(&mGcReference);
     }
   }
-  __gc_ptr_impl(const __gc_ptr_impl<_Tp> &ptr) : __gc_ptr_impl() {
-    mGcReference = ptr.mGcReference;
-  }
-  __gc_ptr_impl(__gc_ptr_impl<_Tp> &&ptr) : __gc_ptr_impl() {
-    mGcReference = ptr.mGcReference;
-    ptr.mGcReference.update(nullptr);
-  }
   explicit __gc_ptr_impl(GcReference gcReference) : __gc_ptr_impl() {
     mGcReference = gcReference;
+  }
+  explicit __gc_ptr_impl(nullptr_t) : __gc_ptr_impl() {
+    mGcReference = nullptr;
   }
   ~__gc_ptr_impl() {
     if (!GcReference::isInYoungGeneration(this)) {
       GcReference::removeRoots(&mGcReference);
     }
   }
-  __gc_ptr_impl &operator=(const __gc_ptr_impl &ptr) = default;
-  __gc_ptr_impl &operator=(__gc_ptr_impl &&ptr) noexcept = default;
-  GcReference &getReference() {
+  __gc_ptr_impl &operator=(GcReference reference) {
+    mGcReference.update(reference.getRecord());
+  }
+  __gc_ptr_impl &operator=(nullptr_t) {
+    mGcReference.update(nullptr);
+  }
+  explicit operator bool() const noexcept {
+    return mGcReference;
+  }
+  GcReference getReference() {
+    return mGcReference;
+  }
+  GcReference getReference() const {
     return mGcReference;
   }
 
@@ -107,37 +114,75 @@ class __gc_ptr_impl {
   static thread_local _ThreadRegister mThreadRegister;
   GcReference mGcReference;
 };
-template<typename _Tp>
-thread_local _ThreadRegister __gc_ptr_impl<_Tp>::mThreadRegister;
+
 template<typename _Tp>
 class gc_ptr {
  public:
+  GcReference getGcReference() {
+    return _M_t.getReference();
+  }
+  GcReference getGcReference() const {
+    return _M_t.getReference();
+  }
+  template<typename _Up>
+  using __safe_conversion_up =
+  std::__or_<
+      std::is_same<_Up, _Tp>,
+      std::__and_<
+          std::is_convertible<_Up, _Tp>,
+          std::__not_<std::is_array<_Up>>
+      >
+  >;
   gc_ptr() : _M_t() {
     createIndices();
   }
-  explicit gc_ptr(GcReference gcReference) : _M_t(gcReference) {}
-  gc_ptr(const gc_ptr &ptr) : _M_t(ptr._M_t) {
+  explicit gc_ptr(GcReference gcReference) : _M_t(gcReference) {
     createIndices();
   }
-  gc_ptr(gc_ptr &&ptr) : _M_t(ptr._M_t) {
+  gc_ptr(const gc_ptr &ptr) : _M_t(ptr.getGcReference()) {
+    createIndices();
+  }
+  gc_ptr(gc_ptr &&ptr) : _M_t(ptr.getGcReference()) {
+    ptr = nullptr;
+    createIndices();
+  }
+  template<typename _Up, typename = std::_Require<__safe_conversion_up<_Up>>>
+  gc_ptr(const gc_ptr<_Up> &ptr) : _M_t(ptr.getGcReference()) {
+    createIndices();
+  }
+  template<typename _Up, typename = std::_Require<__safe_conversion_up<_Up>>>
+  gc_ptr(gc_ptr &&ptr) : _M_t(ptr.getGcReference()) {
+    ptr = nullptr;
     createIndices();
   }
   gc_ptr &operator=(nullptr_t) noexcept {
-    _M_t.getReference().update(nullptr);
+    _M_t = nullptr;
     return *this;
   }
   gc_ptr &operator=(const gc_ptr &ptr) {
-    _M_t = ptr._M_t;
+    _M_t = ptr.getGcReference();
     return *this;
   }
   gc_ptr &operator=(gc_ptr &&ptr) noexcept {
-    _M_t = ptr._M_t;
-    ptr._M_t.getReference().update(nullptr);
+    _M_t = ptr.getGcReference();
+    ptr.getGcReference().update(nullptr);
+    return *this;
+  }
+  template<typename _Up, typename = std::_Require<__safe_conversion_up<_Up>>>
+  gc_ptr &operator=(const gc_ptr<_Up> &ptr) {
+    _M_t = ptr.getGcReference();
+    return *this;
+  }
+  template<typename _Up, typename = std::_Require<__safe_conversion_up<_Up>>>
+  gc_ptr &operator=(gc_ptr<_Up> &&ptr) noexcept {
+    _M_t = ptr.getGcReference();
+    ptr.getGcReference().update(nullptr);
     return *this;
   }
   _Tp *operator->() {
     return (_Tp *) _M_t.getReference().getReference();
   }
+  explicit operator bool() const noexcept { return _M_t; }
  private:
   template<typename _Up, typename... _Args>
   friend typename _MakeGc<_Up>::__single_object
@@ -159,7 +204,24 @@ bool gc_ptr<_Tp>::mIndexing(false);
 template<typename _Tp>
 class gc_ptr<_Tp[]> {
  public:
+  template<typename _Up>
+  using __safe_conversion_raw = std::__and_<
+      std::__or_<std::is_same<_Up, _Tp[]>,
+                 std::__and_<std::is_pointer<_Up>,
+                             std::is_same<_Up, _Tp *>
+                 >
+      >
+  >;
+  template<typename _Up,
+      typename = std::_Require<__safe_conversion_raw<_Up>>>
+  gc_ptr(const gc_ptr<_Up> &__u) noexcept
+      : _M_t(__u.getGcReference()) {}
+  template<typename _Up,
+      typename = std::_Require<__safe_conversion_raw<_Up>>>
+  gc_ptr(gc_ptr<_Up> &&__u) noexcept
+      : _M_t(__u.getGcReference()) {}
   gc_ptr() : _M_t() {}
+  gc_ptr(nullptr_t) : _M_t(nullptr) {}
   gc_ptr &operator=(nullptr_t) noexcept {
     _M_t.getReference().update(nullptr);
     return *this;

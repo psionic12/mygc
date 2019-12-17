@@ -74,3 +74,6 @@ void mygc::GcReference::collect() {
   auto &collector = mygc::GarbageCollector::getCollector();
   collector.collect();
 }
+mygc::GcReference::GcReference(mygc::Record *ptr) {
+  mPtr = ptr;
+}
