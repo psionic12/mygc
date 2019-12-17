@@ -235,7 +235,8 @@ make_gc(size_t __num) {
     _AddressBase::pop();
   }
   new((ElementType *) ptr + 1) ElementType[__num - 1];
-  return gc_ptr<_Tp>(reference);
+  gc_ptr<_Tp> p(reference);
+  return p;
 }
 template<typename _Tp, typename... _Args>
 inline typename _MakeGc<_Tp>::__invalid_type

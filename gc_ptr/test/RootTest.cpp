@@ -22,7 +22,9 @@ TEST_F(RootTest, rootTest) {
                  (mygc::GcReference *) &threadLocal,
                  (mygc::GcReference *) &(*heap),
                  (mygc::GcReference *) &local2};
-    ASSERT_EQ(roots, mygc::GcReference::getRoots());
+    for (auto* p : roots) {
+      ASSERT_NE(mygc::GcReference::getRoots().find(p), mygc::GcReference::getRoots().end());
+    }
   }
 }
 
