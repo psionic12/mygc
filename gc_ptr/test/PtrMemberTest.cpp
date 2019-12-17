@@ -43,3 +43,32 @@ TEST_F(PtrMemberTest, correctnessTest) {
 
   ASSERT_EQ(v1, v2);
 }
+
+class Baz {
+
+};
+class Foo {
+
+};
+
+class Bar : public Foo {
+
+};
+
+template <typename T>
+class A {};
+
+TEST_F(PtrMemberTest, convertionTest) {
+  mygc::gc_ptr<Foo> p(mygc::make_gc<Foo>());
+
+  p = mygc::make_gc<Bar>();
+  mygc::gc_ptr<A<int>> a = nullptr;
+  auto p2 = mygc::make_gc<Foo>();
+  auto p3 = mygc::make_gc<Bar>();
+
+  mygc::gc_ptr<Foo[]> array(nullptr);
+  array = nullptr;
+  mygc::gc_ptr<Foo[]> a1(array);
+//  a1 = mygc::make_gc<Bar*>();
+//  a1 = mygc::make_gc<Bar[]>(3);
+}

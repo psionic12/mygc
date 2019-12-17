@@ -103,13 +103,15 @@ class __gc_ptr_impl {
   explicit operator bool() const noexcept {
     return mGcReference;
   }
-  GcReference getReference() {
+  GcReference &getReference() {
     return mGcReference;
   }
-  GcReference getReference() const {
+  const GcReference &getReference() const {
     return mGcReference;
   }
-
+  void reset(Record *record) {
+    mGcReference.update(record);
+  }
  private:
   static thread_local _ThreadRegister mThreadRegister;
   GcReference mGcReference;
@@ -136,6 +138,7 @@ class gc_ptr {
   gc_ptr() : _M_t() {
     createIndices();
   }
+  gc_ptr(nullptr_t) : _M_t(nullptr) {}
   explicit gc_ptr(GcReference gcReference) : _M_t(gcReference) {
     createIndices();
   }

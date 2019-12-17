@@ -11,15 +11,16 @@ class GCTest : public testing::Test {
  public:
   GCTest() {
     //TODO figure out how to make these cases isolated
-//    google::InstallFailureSignalHandler();
+    google::InstallFailureSignalHandler();
   }
 };
 
+template<int TestId, int Size>
 class Tester {
  public:
   Tester() {
     mConstructorCalled = true;
-    std::unique_lock<std::mutex> lock(mMutex);
+    std::unique_lock<std::mutex> lock(sMutex);
     static int i = 0;
     mId = i++;
     Tester::aliveness[mId] += 1;
@@ -29,7 +30,7 @@ class Tester {
 //    DLOG(INFO) << "Tester: " << mId << "(" << this << ")" << std::endl;
   }
   ~Tester() {
-    std::unique_lock<std::mutex> lock(mMutex);
+    std::unique_lock<std::mutex> lock(sMutex);
     Tester::aliveness[mId] -= 1;
     lock.unlock();
 //    DLOG(INFO) << "~Tester: " << mId << "(" << this << ")" << std::endl;
@@ -62,19 +63,37 @@ class Tester {
     createdIndex.resize(size);
   }
   int mId;
-  gc_ptr<Tester> mChild;
+  gc_ptr<Tester<TestId, Size>> mChild = nullptr;
   bool mConstructorCalled = false;
-  char mPlaceHolder[512];
+  char mPlaceHolder[Size];
 
-  static std::mutex mMutex;
+  static std::mutex sMutex;
   static std::vector<int> aliveness;
   static std::vector<int> createdIndex;
 
 };
-std::mutex Tester::mMutex;
-std::vector<int> Tester::aliveness{};
-std::vector<int> Tester::createdIndex{};
+template<int TestId, int Size>
+std::mutex Tester<TestId, Size>::sMutex;
+template<int TestId, int Size>
+std::vector<int> Tester<TestId, Size>::aliveness{};
+template<int TestId, int Size>
+std::vector<int> Tester<TestId, Size>::createdIndex{};
+
+TEST_F(GCTest, singleTest) {
+  typedef Tester<2, 128> Tester;
+  Tester::reset(1);
+  auto ptr = make_gc<Tester>();
+  Tester::assertAllCreated();
+  Tester::assertAllAlive();
+  GcReference::collect();
+  Tester::assertAllAlive();
+  ptr = nullptr;
+  GcReference::collect();
+  std::this_thread::sleep_for(std::chrono::seconds(3));
+  Tester::assertAllDead();
+}
 void worker2() {
+  typedef Tester<3, 512> Tester;
   gc_ptr<Tester> t;
   for (int i = 0; i < 10; i++) {
     t = make_gc<Tester>();
@@ -89,23 +108,8 @@ void worker2() {
   t = nullptr;
   GcReference::collect();
 }
-
-TEST_F(GCTest, singleTest) {
-  auto &v1 = Tester::aliveness;
-  auto &v2 = Tester::createdIndex;
-  Tester::reset(1);
-  auto ptr = make_gc<Tester>();
-  Tester::assertAllCreated();
-  Tester::assertAllAlive();
-  GcReference::collect();
-  Tester::assertAllAlive();
-  ptr = nullptr;
-  GcReference::collect();
-  std::this_thread::sleep_for(std::chrono::seconds(3));
-  Tester::assertAllDead();
-}
-
 TEST_F(GCTest, gcTest) {
+  typedef Tester<3, 512> Tester;
   Tester::reset(70);
   std::thread thread2(worker2);
   thread2.detach();
@@ -131,6 +135,7 @@ TEST_F(GCTest, gcTest) {
 }
 
 TEST_F(GCTest, arrayOldTest) {
+  typedef Tester<4, 512> Tester;
   Tester::reset(5);
   gc_ptr<Tester[]> ptr = make_gc<Tester[]>(5);
   Tester::assertAllCreated();
@@ -144,6 +149,7 @@ TEST_F(GCTest, arrayOldTest) {
 }
 
 TEST_F(GCTest, arrayYoungTest) {
+  typedef Tester<5, 512> Tester;
   Tester::reset(5);
   gc_ptr<Tester[]> ptr = make_gc<Tester[]>(5);
   Tester::assertAllCreated();
@@ -153,4 +159,3 @@ TEST_F(GCTest, arrayYoungTest) {
   std::this_thread::sleep_for(std::chrono::seconds(3));
   Tester::assertAllDead();
 }
-
