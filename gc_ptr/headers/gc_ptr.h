@@ -82,6 +82,7 @@ class __gc_ptr_impl {
     if (!GcReference::isInYoungGeneration(this)) {
       GcReference::addRoots(&mGcReference);
     }
+    createIndices();
   }
   explicit __gc_ptr_impl(GcReference gcReference) : __gc_ptr_impl() {
     mGcReference = gcReference;
@@ -106,13 +107,18 @@ class __gc_ptr_impl {
   GcReference &getReference() {
     return mGcReference;
   }
-  const GcReference &getReference() const {
+  GcReference getReference() const {
     return mGcReference;
   }
   void reset(Record *record) {
     mGcReference.update(record);
   }
  private:
+  void createIndices() {
+    if (!_AddressBase::empty() && GcReference::isInYoungGeneration(this)) {
+      _AddressBase::back().second.push_back(this);
+    }
+  }
   static thread_local _ThreadRegister mThreadRegister;
   GcReference mGcReference;
 };
@@ -120,7 +126,10 @@ class __gc_ptr_impl {
 template<typename _Tp>
 class gc_ptr {
  public:
-  GcReference getGcReference() {
+  _Tp *get() const noexcept {
+    return (_Tp *) _M_t.getReference().getReference();
+  }
+  GcReference &getGcReference() {
     return _M_t.getReference();
   }
   GcReference getGcReference() const {
@@ -135,28 +144,15 @@ class gc_ptr {
           std::__not_<std::is_array<_Up>>
       >
   >;
-  gc_ptr() : _M_t() {
-    createIndices();
-  }
+  gc_ptr() : _M_t() {}
   gc_ptr(nullptr_t) : _M_t(nullptr) {}
-  explicit gc_ptr(GcReference gcReference) : _M_t(gcReference) {
-    createIndices();
-  }
-  gc_ptr(const gc_ptr &ptr) : _M_t(ptr.getGcReference()) {
-    createIndices();
-  }
-  gc_ptr(gc_ptr &&ptr) : _M_t(ptr.getGcReference()) {
-    ptr = nullptr;
-    createIndices();
-  }
+  explicit gc_ptr(GcReference gcReference) : _M_t(gcReference) {}
+  gc_ptr(const gc_ptr &ptr) : _M_t(ptr.getGcReference()) {}
   template<typename _Up, typename = std::_Require<__safe_conversion_up<_Up>>>
-  gc_ptr(const gc_ptr<_Up> &ptr) : _M_t(ptr.getGcReference()) {
-    createIndices();
-  }
+  gc_ptr(const gc_ptr<_Up> &ptr) : _M_t(ptr.getGcReference()) {}
   template<typename _Up, typename = std::_Require<__safe_conversion_up<_Up>>>
   gc_ptr(gc_ptr &&ptr) : _M_t(ptr.getGcReference()) {
     ptr = nullptr;
-    createIndices();
   }
   gc_ptr &operator=(nullptr_t) noexcept {
     _M_t = nullptr;
@@ -182,8 +178,12 @@ class gc_ptr {
     ptr.getGcReference().update(nullptr);
     return *this;
   }
-  _Tp *operator->() {
+  _Tp *operator->() const noexcept {
     return (_Tp *) _M_t.getReference().getReference();
+  }
+  typename std::add_lvalue_reference<_Tp>::type
+  operator*() const {
+    return *(_Tp *) _M_t.getReference().getReference();
   }
   explicit operator bool() const noexcept { return _M_t; }
  private:
@@ -194,11 +194,6 @@ class gc_ptr {
   friend typename _MakeGc<_Up>::__array
   make_gc(size_t __num);
   static bool mIndexing; // do not make it atomic, may calculate several time but save time for make_gc later
-  void createIndices() {
-    if (!_AddressBase::empty() && GcReference::isInYoungGeneration(this)) {
-      _AddressBase::back().second.push_back(this);
-    }
-  }
   __gc_ptr_impl<_Tp> _M_t;
 };
 template<typename _Tp>
@@ -226,8 +221,12 @@ class gc_ptr<_Tp[]> {
   gc_ptr() : _M_t() {}
   gc_ptr(nullptr_t) : _M_t(nullptr) {}
   gc_ptr &operator=(nullptr_t) noexcept {
-    _M_t.getReference().update(nullptr);
+    _M_t.reset(nullptr);
     return *this;
+  }
+  typename std::add_lvalue_reference<_Tp>::type
+  operator[](size_t __i) const {
+    return ((_Tp *) (_M_t.getReference().getReference()))[__i];
   }
  private:
   template<typename _Up>
@@ -236,6 +235,33 @@ class gc_ptr<_Tp[]> {
   explicit gc_ptr(GcReference gcReference) : _M_t(gcReference) {}
   __gc_ptr_impl<_Tp> _M_t;
 };
+
+template<typename _Tp, typename _Up>
+inline bool
+operator==(const gc_ptr<_Tp> &__x,
+           const gc_ptr<_Up> &__y) { return __x.get() == __y.get(); }
+
+template<typename _Tp>
+inline bool
+operator==(const gc_ptr<_Tp> &__x, nullptr_t) noexcept { return !__x; }
+
+template<typename _Tp>
+inline bool
+operator==(nullptr_t, const gc_ptr<_Tp> &__x) noexcept { return !__x; }
+
+template<typename _Tp,
+    typename _Up>
+inline bool
+operator!=(const gc_ptr<_Tp> &__x,
+           const gc_ptr<_Up> &__y) { return __x.get() != __y.get(); }
+
+template<typename _Tp>
+inline bool
+operator!=(const gc_ptr<_Tp> &__x, nullptr_t) noexcept { return (bool) __x; }
+
+template<typename _Tp>
+inline bool
+operator!=(nullptr_t, const gc_ptr<_Tp> &__x) noexcept { return (bool) __x; }
 
 template<typename _Tp>
 struct _MakeGc { typedef gc_ptr<_Tp> __single_object; };

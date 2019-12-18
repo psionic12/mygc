@@ -10,8 +10,7 @@ using namespace mygc;
 class GCTest : public testing::Test {
  public:
   GCTest() {
-    //TODO figure out how to make these cases isolated
-    google::InstallFailureSignalHandler();
+//    google::InstallFailureSignalHandler();
   }
 };
 

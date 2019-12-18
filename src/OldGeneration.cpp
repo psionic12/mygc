@@ -110,9 +110,6 @@ mygc::OldGeneration::~OldGeneration() {
   mTerminate = true;
   lock.unlock();
   mCV.notify_all();
-  for (auto &block : mBlocks) {
-    delete block;
-  }
   mScavenger.join();
 }
 size_t mygc::OldGeneration::getAllocatedSize() {
