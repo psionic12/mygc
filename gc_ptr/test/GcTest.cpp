@@ -158,3 +158,19 @@ TEST_F(GCTest, arrayYoungTest) {
   std::this_thread::sleep_for(std::chrono::seconds(3));
   Tester::assertAllDead();
 }
+
+TEST_F(GCTest, largeTest) {
+  typedef Tester<6, 2 << 13> Tester;
+  Tester::reset(1);
+  gc_ptr<Tester> ptr = make_gc<Tester>();
+  Tester::assertAllCreated();
+  Tester::assertAllAlive();
+  GcReference::collect();
+  Tester::assertAllCreated();
+  Tester::assertAllAlive();
+  ASSERT_EQ(ptr->getId(), 0);
+  ptr = nullptr;
+  GcReference::collect();
+  std::this_thread::sleep_for(std::chrono::seconds(3));
+  Tester::assertAllDead();
+}

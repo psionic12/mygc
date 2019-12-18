@@ -35,13 +35,13 @@ void mygc::LargeObjects::scavenge() {
   }
 }
 void mygc::LargeObjects::onScanEnd() {
-  auto *record = mGrayList.getHead();
   //TODO refactor RecordList to insert the whole chain
-  while (record) {
+  while (auto *record = mGrayList.getHead()) {
     mGrayList.remove(record);
     std::unique_lock<std::mutex> lock(mBlackListMutex);
     mBlackList.add(record);
   }
+  mGrayList = std::move(mWhiteList);
 }
 void mygc::LargeObjects::mark(mygc::LargeRecord *record) {
   mGrayList.remove(record);
