@@ -6,7 +6,7 @@ mygc is a precise, generation distinguished, stop the world garbage collection l
     p = mygc::make_gc<int>(1); // allocate objects in gc heap
     p = mygc::make_gc<int>(2); // allocate another
     auto p2 = mygc::make_gc<int>(3);
-    p = p2; //lvalue move is allowed
+    p = p2; //lvalue assign is allowed
     p = nullptr;
   
     mygc::gc_ptr<int[]> array = mygc::make_gc<int[]>(3); //create an array of three int objects in gc heap;
