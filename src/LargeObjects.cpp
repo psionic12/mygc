@@ -28,10 +28,10 @@ void mygc::LargeObjects::scavenge() {
         record->descriptor->callDestructor(record->data + i * record->descriptor->typeSize());
       }
     }
-    free(record);
     lock.lock();
     mBlackList.remove(record);
     lock.unlock();
+    free(record);
   }
 }
 void mygc::LargeObjects::onScanEnd() {

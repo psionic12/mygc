@@ -20,8 +20,9 @@ std::vector<int> v(workers);
 std::set<pthread_t> threads;
 
 void *workerFunction(void *index) {
+  int i = *(int*) index;
+  delete index;
   while (true) {
-    int i = *(int*) index;
     v[i]++;
     std::this_thread::sleep_for(std::chrono::seconds(1));
   }
@@ -44,7 +45,7 @@ TEST_F(StopTheWorldTest, stop_the_world_test) {
   ASSERT_EQ(v, v1);
   restart_the_world();
   std::this_thread::sleep_for(std::chrono::seconds(3));
-  for(auto id : threads) {
+  for (auto id : threads) {
     pthread_cancel(id);
   }
   ASSERT_NE(v, v1);

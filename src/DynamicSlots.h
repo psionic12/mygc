@@ -16,7 +16,7 @@ class DynamicSlots {
     size_t base = Tools::getLastOneFromRight(naturalIndex) - 1;
     while (mSlots.size() <= base) {
       size_t requiredSize = 1u << mSlots.size();
-      if(f) {f(requiredSize);}
+      if (f) { f(requiredSize); }
 
       mSlots.push_back(new SlotType[requiredSize]);
     }
@@ -25,6 +25,11 @@ class DynamicSlots {
   }
   const std::vector<SlotType *> &data() {
     return mSlots;
+  }
+  ~DynamicSlots() {
+    for (auto *p : mSlots) {
+      delete[] p;
+    }
   }
  private:
   std::vector<SlotType *> mSlots;

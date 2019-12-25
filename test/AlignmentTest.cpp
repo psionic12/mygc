@@ -22,4 +22,12 @@ TEST_F(AlignmentTest, alignmentTest) {
   ASSERT_EQ(reinterpret_cast<size_t>(doublePtr) % base, 0);
   ASSERT_EQ(reinterpret_cast<size_t>(longPtr) % base, 0);
   ASSERT_EQ(reinterpret_cast<size_t>(arrayPtr) % base, 0);
+
+  delete charPtr;
+  delete shortPtr;
+  delete intPtr;
+  delete floatPtr;
+  delete doublePtr;
+  delete longPtr;
+  delete[] arrayPtr;
 }

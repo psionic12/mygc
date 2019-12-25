@@ -11,7 +11,8 @@
 
 mygc::OldRecord *mygc::OldGeneration::copyFromYoungSTW(YoungRecord *from) {
   auto *descriptor = from->descriptor;
-  size_t totalSize = sizeof(OldRecord) + descriptor->typeSize() * from->counts;
+  size_t dataSize = descriptor->typeSize() * from->counts;
+  size_t totalSize = sizeof(OldRecord) + dataSize;
   // choose which block to use first
   int blockIndex;
   if (from->counts == 1) {
@@ -33,7 +34,7 @@ mygc::OldRecord *mygc::OldGeneration::copyFromYoungSTW(YoungRecord *from) {
   record->location = Location::kOldGeneration;
   record->descriptor = from->descriptor;
   record->counts = from->counts;
-  memcpy(record->data, from->data, totalSize);
+  memcpy(record->data, from->data, dataSize);
   if (record->descriptor->nonTrivial()) {
     mWhiteList.add(record);
   }

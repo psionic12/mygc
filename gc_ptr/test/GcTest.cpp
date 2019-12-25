@@ -41,16 +41,19 @@ class Tester {
     return mId;
   }
   static void assertAllCreated() {
+    std::unique_lock<std::mutex> lock(sMutex);
     for (int i = 0; i < createdIndex.size(); i++) {
       ASSERT_EQ(createdIndex[i], i) << " : v2[" << i << "] is " << createdIndex[i] << std::endl;
     }
   }
   static void assertAllAlive() {
+    std::unique_lock<std::mutex> lock(sMutex);
     for (int i = 0; i < aliveness.size(); i++) {
       ASSERT_TRUE(aliveness[i] == 1) << " : v1[" << i << "] is " << aliveness[i] << std::endl;
     }
   }
   static void assertAllDead() {
+    std::unique_lock<std::mutex> lock(sMutex);
     for (int i = 0; i < aliveness.size(); i++) {
       ASSERT_TRUE(aliveness[i] == 0) << " : v1[" << i << "] is " << aliveness[i] << std::endl;
     }

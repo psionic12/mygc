@@ -195,11 +195,11 @@ class gc_ptr {
   template<typename _Up>
   friend typename _MakeGc<_Up>::__array
   make_gc(size_t __num);
-  static bool mIndexing; // do not make it atomic, may calculate several time but save time for make_gc later
+  static std::atomic_bool mIndexing; // back to atomic for ThreadSanitizer check
   __gc_ptr_impl<_Tp> _M_t;
 };
 template<typename _Tp>
-bool gc_ptr<_Tp>::mIndexing(false);
+std::atomic_bool gc_ptr<_Tp>::mIndexing(false);
 
 template<typename _Tp>
 class gc_ptr<_Tp[]> {
@@ -281,9 +281,8 @@ make_gc(_Args &&... __args) {
   GcReference reference;
   reference.gcAllocate(typeId);
   void *ptr = reference.getReference();
-  bool shouldIndex = !completed && !gc_ptr<_Tp>::mIndexing;
+  bool shouldIndex = !completed && !gc_ptr<_Tp>::mIndexing.exchange(true);
   if (shouldIndex) {
-    gc_ptr<_Tp>::mIndexing = true;
     _AddressBase::push(ptr);
   }
   new(ptr) _Tp(std::forward<_Args>(__args)...);
@@ -310,9 +309,8 @@ make_gc(size_t __num) {
   GcReference reference;
   reference.gcAllocate(typeId, __num);
   void *ptr = reference.getReference();
-  bool shouldIndex = !completed && !gc_ptr<ElementType>::mIndexing;
+  bool shouldIndex = !completed && !gc_ptr<ElementType>::mIndexing.exchange(true);
   if (shouldIndex) {
-    gc_ptr<ElementType>::mIndexing = true;
     _AddressBase::push(ptr);
   }
   new(ptr) ElementType(); // construct only one to get the indices
