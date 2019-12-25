@@ -14,12 +14,7 @@ mygc::SingleType::SingleType(size_t typeSize,
                              bool completed) : ITypeDescriptor(typeSize, completed),
                                                mIndices(std::move(indices)),
                                                mDestructor(destructor) {}
-void mygc::SingleType::update(size_t typeSize,
-                              std::vector<size_t> &&indices,
-                              void (*destructor)(void *),
-                              bool completed) {
-  mTypeSize = typeSize;
+void mygc::SingleType::update(std::vector<size_t> &&indices, bool completed) {
   mIndices = std::move(indices);
-  mDestructor = destructor;
   mCompleted = completed;
 }

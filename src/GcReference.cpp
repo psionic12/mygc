@@ -36,7 +36,7 @@ void mygc::GcReference::registerType(size_t typeId,
 }
 bool mygc::GcReference::isCompletedDescriptor(size_t typeId) {
   auto &collector = mygc::GarbageCollector::getCollector();
-  return collector.getTypeById(typeId)->isCompleted();
+  return collector.isCompletedDescriptor(typeId);
 }
 bool mygc::GcReference::isInYoungGeneration(void *ptr) {
   auto &collector = mygc::GarbageCollector::getCollector();

@@ -28,7 +28,7 @@ mygc::GarbageCollector::GarbageCollector() : mRemain(MYGC_TOTAL_SIZE) {
 //  LOG(INFO) << "young generation heap size: " << YoungGeneration::defaultSize() << std::endl;
 }
 
-mygc::Record * mygc::GarbageCollector::New(ITypeDescriptor *descriptor, size_t counts) {
+mygc::Record *mygc::GarbageCollector::New(ITypeDescriptor *descriptor, size_t counts) {
   size_t size = sizeof(YoungRecord) + counts * descriptor->typeSize();
   if (size < OldGeneration::getMaxBlockSize()) {
     auto *ptr = getYoung()->allocate(descriptor, counts);
@@ -91,7 +91,7 @@ void mygc::GarbageCollector::registerType(size_t id,
   std::lock_guard<std::mutex> guard(mGcMutex);
   try {
     auto *descriptor = (SingleType *) mTypeMap.at(id).get();
-    descriptor->update(typeSize, std::move(indices), destructor, completed);
+    descriptor->update(std::move(indices), completed);
   } catch (const std::out_of_range &) {
     mTypeMap.insert({id, std::make_unique<SingleType>(typeSize, std::move(indices), destructor, completed)});
   }
@@ -203,6 +203,7 @@ bool mygc::GarbageCollector::willOom(size_t allocaSize) {
   return mRemain < allocaSize;
 }
 void mygc::GarbageCollector::updateTotalSize() {
+  std::lock_guard<std::mutex> guard(mGcMutex);
   mRemain = MYGC_TOTAL_SIZE - mOldGeneration.getAllocatedSize();
 }
 void mygc::GarbageCollector::collect() {
@@ -210,4 +211,8 @@ void mygc::GarbageCollector::collect() {
   collectSTW();
   restartTheWorldLocked();
 
+}
+bool mygc::GarbageCollector::isCompletedDescriptor(size_t typeId) {
+  std::lock_guard<std::mutex> guard(mGcMutex);
+  return getTypeById(typeId)->isCompleted();
 }

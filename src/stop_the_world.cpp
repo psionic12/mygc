@@ -35,9 +35,15 @@ void stop_the_world(const std::set<pthread_t> &threads) {
   auto self = pthread_self();
   for (auto thread : threads) {
     if (thread != self) {
+      std::unique_lock<std::mutex> lk(sThreadBlocker);
       gTotalThreads++;
-//      GCLOG("send stop signal to tid: %u", thread);
-      pthread_kill(thread, MYGC_STOP_SIGNAL);
+      lk.unlock();
+      if (pthread_kill(thread, MYGC_STOP_SIGNAL) < 0) {
+        perror("sigaction");
+        exit(-1);
+      } else {
+//        GCLOG("send stop signal to tid: %u", thread);
+      }
     }
   }
   {

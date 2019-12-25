@@ -32,6 +32,7 @@ class GarbageCollector {
                     void (*destructor)(void *object),
                     bool completed);
   ITypeDescriptor *getTypeById(size_t id);
+  bool isCompletedDescriptor(size_t typeId);
   bool willOom(size_t allocaSize);
   void updateTotalSize();
  private:

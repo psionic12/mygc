@@ -28,7 +28,7 @@ class ITypeDescriptor {
   virtual bool nonTrivial() = 0;
   virtual void callDestructor(Object *object) = 0;
  protected:
-  size_t mTypeSize;
+  const size_t mTypeSize;
   bool mCompleted;
   int mBlockIndex;
 };
@@ -47,10 +47,7 @@ class SingleType : public ITypeDescriptor {
   void callDestructor(Object *object) override {
     if (mDestructor) mDestructor(object);
   }
-  void update(size_t typeSize,
-              std::vector<size_t> &&indices,
-              void (*destructor)(void *object),
-              bool completed);
+  void update(std::vector<size_t> &&indices, bool completed);
  private:
   void (*mDestructor)(void *object);
   std::vector<size_t> mIndices;
