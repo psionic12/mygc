@@ -19,7 +19,7 @@
 namespace mygc {
 class GarbageCollector {
  public:
-  YoungRecord *New(ITypeDescriptor *descriptor, size_t counts);
+  Record * New(ITypeDescriptor *descriptor, size_t counts);
   bool inHeap(void *ptr);
   void addRoots(GcReference *ptr);
   void removeRoots(GcReference *ptr);

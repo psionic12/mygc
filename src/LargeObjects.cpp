@@ -40,6 +40,8 @@ void mygc::LargeObjects::onScanEnd() {
     mGrayList.remove(record);
     std::unique_lock<std::mutex> lock(mBlackListMutex);
     mBlackList.add(record);
+    lock.unlock();
+    mCV.notify_all();
   }
   mGrayList = std::move(mWhiteList);
 }

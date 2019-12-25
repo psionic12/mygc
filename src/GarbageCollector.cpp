@@ -28,7 +28,7 @@ mygc::GarbageCollector::GarbageCollector() : mRemain(MYGC_TOTAL_SIZE) {
 //  LOG(INFO) << "young generation heap size: " << YoungGeneration::defaultSize() << std::endl;
 }
 
-mygc::YoungRecord *mygc::GarbageCollector::New(ITypeDescriptor *descriptor, size_t counts) {
+mygc::Record * mygc::GarbageCollector::New(ITypeDescriptor *descriptor, size_t counts) {
   size_t size = sizeof(YoungRecord) + counts * descriptor->typeSize();
   if (size < OldGeneration::getMaxBlockSize()) {
     auto *ptr = getYoung()->allocate(descriptor, counts);
@@ -50,9 +50,8 @@ mygc::YoungRecord *mygc::GarbageCollector::New(ITypeDescriptor *descriptor, size
     }
     return ptr;
   } else {
-    mLargeObjects.allocate(descriptor, counts);
+    return mLargeObjects.allocate(descriptor, counts);
   }
-
 }
 void mygc::GarbageCollector::addRoots(GcReference *ptr) {
   std::lock_guard<std::mutex> guard(mGcMutex);
@@ -211,9 +210,4 @@ void mygc::GarbageCollector::collect() {
   collectSTW();
   restartTheWorldLocked();
 
-}
-
-extern "C" void __cxa_pure_virtual() {
-  //TODO Print stack trace
-  GCLOG("__cxa_pure_virtual");
 }

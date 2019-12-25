@@ -87,7 +87,7 @@ class __gc_ptr_impl {
   explicit __gc_ptr_impl(GcReference gcReference) : __gc_ptr_impl() {
     mGcReference = gcReference;
   }
-  explicit __gc_ptr_impl(nullptr_t) : __gc_ptr_impl() {
+  explicit __gc_ptr_impl(std::nullptr_t) : __gc_ptr_impl() {
     mGcReference = nullptr;
   }
   ~__gc_ptr_impl() {
@@ -97,9 +97,11 @@ class __gc_ptr_impl {
   }
   __gc_ptr_impl &operator=(GcReference reference) {
     mGcReference.update(reference.getRecord());
+    return *this;
   }
-  __gc_ptr_impl &operator=(nullptr_t) {
+  __gc_ptr_impl &operator=(std::nullptr_t) {
     mGcReference.update(nullptr);
+    return *this;
   }
   explicit operator bool() const noexcept {
     return mGcReference;
@@ -145,7 +147,7 @@ class gc_ptr {
       >
   >;
   gc_ptr() : _M_t() {}
-  gc_ptr(nullptr_t) : _M_t(nullptr) {}
+  gc_ptr(std::nullptr_t) : _M_t(nullptr) {}
   explicit gc_ptr(GcReference gcReference) : _M_t(gcReference) {}
   gc_ptr(const gc_ptr &ptr) : _M_t(ptr.getGcReference()) {}
   template<typename _Up, typename = std::_Require<__safe_conversion_up<_Up>>>
@@ -154,7 +156,7 @@ class gc_ptr {
   gc_ptr(gc_ptr &&ptr) : _M_t(ptr.getGcReference()) {
     ptr = nullptr;
   }
-  gc_ptr &operator=(nullptr_t) noexcept {
+  gc_ptr &operator=(std::nullptr_t) noexcept {
     _M_t = nullptr;
     return *this;
   }
@@ -219,8 +221,8 @@ class gc_ptr<_Tp[]> {
   gc_ptr(gc_ptr<_Up> &&__u) noexcept
       : _M_t(__u.getGcReference()) {}
   gc_ptr() : _M_t() {}
-  gc_ptr(nullptr_t) : _M_t(nullptr) {}
-  gc_ptr &operator=(nullptr_t) noexcept {
+  gc_ptr(std::nullptr_t) : _M_t(nullptr) {}
+  gc_ptr &operator=(std::nullptr_t) noexcept {
     _M_t.reset(nullptr);
     return *this;
   }
@@ -243,11 +245,11 @@ operator==(const gc_ptr<_Tp> &__x,
 
 template<typename _Tp>
 inline bool
-operator==(const gc_ptr<_Tp> &__x, nullptr_t) noexcept { return !__x; }
+operator==(const gc_ptr<_Tp> &__x, std::nullptr_t) noexcept { return !__x; }
 
 template<typename _Tp>
 inline bool
-operator==(nullptr_t, const gc_ptr<_Tp> &__x) noexcept { return !__x; }
+operator==(std::nullptr_t, const gc_ptr<_Tp> &__x) noexcept { return !__x; }
 
 template<typename _Tp,
     typename _Up>
@@ -257,11 +259,11 @@ operator!=(const gc_ptr<_Tp> &__x,
 
 template<typename _Tp>
 inline bool
-operator!=(const gc_ptr<_Tp> &__x, nullptr_t) noexcept { return (bool) __x; }
+operator!=(const gc_ptr<_Tp> &__x, std::nullptr_t) noexcept { return (bool) __x; }
 
 template<typename _Tp>
 inline bool
-operator!=(nullptr_t, const gc_ptr<_Tp> &__x) noexcept { return (bool) __x; }
+operator!=(std::nullptr_t, const gc_ptr<_Tp> &__x) noexcept { return (bool) __x; }
 
 template<typename _Tp>
 struct _MakeGc { typedef gc_ptr<_Tp> __single_object; };
