@@ -68,6 +68,6 @@ void stop_the_world_init() {
   memset(&act, '\0', sizeof(act));
   act.sa_handler = stop_handler;
   sigemptyset(&act.sa_mask);
-  act.sa_flags = 0;
+  act.sa_flags = SA_RESTART;
   sigaction (MYGC_STOP_SIGNAL, &act, nullptr);
 }
