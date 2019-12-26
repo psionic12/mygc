@@ -25,7 +25,7 @@ mygc::OldRecord *mygc::OldGeneration::copyFromYoungSTW(YoungRecord *from) {
     if (GarbageCollector::getCollector().willOom(size)) {
       throw std::runtime_error("out of memory");
     } else {
-      GarbageCollector::getCollector().updateTotalSize();
+      GarbageCollector::getCollector().updateTotalSizeSTW();
     }
   });
   void *ptr = pair.second;

@@ -202,15 +202,14 @@ mygc::YoungGeneration *mygc::GarbageCollector::getYoung() {
 bool mygc::GarbageCollector::willOom(size_t allocaSize) {
   return mRemain < allocaSize;
 }
-void mygc::GarbageCollector::updateTotalSize() {
-  std::lock_guard<std::mutex> guard(mGcMutex);
+void mygc::GarbageCollector::updateTotalSizeSTW() {
   mRemain = MYGC_TOTAL_SIZE - mOldGeneration.getAllocatedSize();
 }
 void mygc::GarbageCollector::collect() {
+  std::lock_guard<std::mutex> guard(mGcMutex);
   stopTheWorldLocked();
   collectSTW();
   restartTheWorldLocked();
-
 }
 bool mygc::GarbageCollector::isCompletedDescriptor(size_t typeId) {
   std::lock_guard<std::mutex> guard(mGcMutex);
