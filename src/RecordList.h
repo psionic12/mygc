@@ -44,7 +44,9 @@ class RecordList {
     if (pre) {
       (pre->*pList).next = (record->*pList).next;
     } else {
-      head = (record->*pList).next;
+      if (head == record) {
+        head = (record->*pList).next;
+      }
     }
     if (next) {
       (next->*pList).pre = (record->*pList).pre;

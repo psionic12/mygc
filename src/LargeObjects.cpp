@@ -3,6 +3,7 @@
 //
 
 #include "LargeObjects.h"
+#include "Tools.h"
 mygc::LargeRecord *mygc::LargeObjects::allocate(mygc::ITypeDescriptor *descriptor, size_t counts) {
   void *ptr = malloc(sizeof(LargeRecord) + descriptor->typeSize());
   auto *largeRecord = (LargeRecord *) ptr;

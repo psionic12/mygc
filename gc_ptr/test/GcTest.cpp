@@ -94,26 +94,28 @@ TEST_F(GCTest, singleTest) {
   std::this_thread::sleep_for(std::chrono::seconds(3));
   Tester::assertAllDead();
 }
-void worker2() {
-  typedef Tester<3, 512> Tester;
-  gc_ptr<Tester> t;
-  for (int i = 0; i < 10; i++) {
-    t = make_gc<Tester>();
-    t->mChild = t;
-  }
-  for (int i = 0; i < 10; i++) {
-    t = make_gc<Tester>();
-  }
-  for (int i = 0; i < 10; i++) {
-    t = make_gc<Tester>();
-  }
-  t = nullptr;
-  GcReference::collect();
-}
 TEST_F(GCTest, gcTest) {
   typedef Tester<3, 512> Tester;
   Tester::reset(70);
-  std::thread thread2(worker2);
+  std::thread thread2([]() {
+    gc_ptr<Tester> child;
+    gc_ptr<Tester> current;
+    for (int i = 0; i < 10; i++) {
+      current = make_gc<Tester>();
+      current->mChild = child;
+      child = current;
+      current = nullptr;
+    }
+    for (int i = 0; i < 10; i++) {
+      current = make_gc<Tester>();
+    }
+    for (int i = 0; i < 10; i++) {
+      current = make_gc<Tester>();
+    }
+    current = nullptr;
+    child = nullptr;
+    GcReference::collect();
+  });
   thread2.detach();
   gc_ptr<Tester> t;
   for (int i = 0; i < 10; i++) {
@@ -162,18 +164,27 @@ TEST_F(GCTest, arrayYoungTest) {
   Tester::assertAllDead();
 }
 
-TEST_F(GCTest, largeTest) {
+TEST_F(GCTest, gcLargeTest) {
   typedef Tester<6, 2 << 13> Tester;
-  Tester::reset(1);
-  gc_ptr<Tester> ptr = make_gc<Tester>();
-  Tester::assertAllCreated();
-  Tester::assertAllAlive();
-  GcReference::collect();
-  Tester::assertAllCreated();
-  Tester::assertAllAlive();
-  ASSERT_EQ(ptr->getId(), 0);
-  ptr = nullptr;
+  Tester::reset(10);
+  std::thread thread2([]() {
+    gc_ptr<Tester> t;
+    for (int i = 0; i < 10; i++) {
+      t = make_gc<Tester>();
+      t->mChild = t;
+    }
+    t = nullptr;
+    GcReference::collect();
+  });
+  thread2.detach();
+  gc_ptr<Tester> t;
+  for (int i = 0; i < 10; i++) {
+    t = make_gc<Tester>();
+    ASSERT_EQ(t->constructorCalled(), true);
+  }
+  t = nullptr;
   GcReference::collect();
   std::this_thread::sleep_for(std::chrono::seconds(3));
+  Tester::assertAllCreated();
   Tester::assertAllDead();
 }

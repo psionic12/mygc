@@ -50,6 +50,7 @@ mygc::Record *mygc::GarbageCollector::New(ITypeDescriptor *descriptor, size_t co
     }
     return ptr;
   } else {
+    std::lock_guard<std::mutex> guard(mGcMutex);
     return mLargeObjects.allocate(descriptor, counts);
   }
 }
@@ -108,7 +109,6 @@ mygc::Record *mygc::GarbageCollector::collectRecordSTW(Record *root) {
       auto *young = (YoungRecord *) root;
       OldRecord *old;
       if (!young->copied) {
-//        DLOG(INFO) << "copy alive objects " << ((Tester *) (young->data))->mId << std::endl;
         young->copied = true;
         if (!inHeap(young)) {
           //we do not move object in other young generations, but we should iterate the child.
@@ -195,7 +195,7 @@ std::set<mygc::GcReference *> mygc::GarbageCollector::getRoots() {
 }
 mygc::YoungGeneration *mygc::GarbageCollector::getYoung() {
   if (!tYoung) {
-    tYoung = mYoungPool.getCleanGeneration();
+    tYoung = std::make_unique<YoungGeneration>();
   }
   return tYoung.get();
 }
