@@ -15,6 +15,25 @@
 #include "GcReference.h"
 
 namespace mygc {
+template<bool>
+class _RootManager {
+ public:
+  _RootManager(GcReference *root) {}
+};
+
+template<>
+class _RootManager<true> {
+ public:
+  _RootManager(GcReference *root) : mRoot(root) {
+    GcReference::addRoots(root);
+  }
+  ~_RootManager() {
+    GcReference::removeRoots(mRoot);
+  }
+ private:
+  GcReference *mRoot;
+};
+
 class _ThreadRegister {
  public:
   _ThreadRegister() {
@@ -44,6 +63,15 @@ class _AddressBase {
     return v;
   }
 };
+
+template<typename _Tp>
+class _TypeIndexing {
+ public:
+  static std::atomic_bool mIndexing;
+};
+template<typename _Tp>
+std::atomic_bool _TypeIndexing<_Tp>::mIndexing(false);
+
 template<typename _Tp, typename = void>
 class _TypeRegister {
  public:
@@ -74,14 +102,11 @@ struct _MakeGc;
 template<typename _Tp>
 struct _MakeGc<_Tp[]>;
 
-template<typename _Tp>
+template<typename _Tp, bool root>
 class __gc_ptr_impl {
  public:
-  __gc_ptr_impl() {
+  __gc_ptr_impl() : mRootManager(&mGcReference) {
     thread_local _ThreadRegister threadRegister;
-    if (!GcReference::isInYoungGeneration(this)) {
-      GcReference::addRoots(&mGcReference);
-    }
     createIndices();
   }
   explicit __gc_ptr_impl(GcReference gcReference) : __gc_ptr_impl() {
@@ -89,11 +114,6 @@ class __gc_ptr_impl {
   }
   explicit __gc_ptr_impl(std::nullptr_t) : __gc_ptr_impl() {
     mGcReference = nullptr;
-  }
-  ~__gc_ptr_impl() {
-    if (!GcReference::isInYoungGeneration(this)) {
-      GcReference::removeRoots(&mGcReference);
-    }
   }
   __gc_ptr_impl &operator=(GcReference reference) {
     mGcReference.update(reference.getRecord());
@@ -123,9 +143,10 @@ class __gc_ptr_impl {
   }
   static thread_local _ThreadRegister mThreadRegister;
   GcReference mGcReference;
+  _RootManager<root> mRootManager;
 };
 
-template<typename _Tp>
+template<typename _Tp, bool root = false>
 class gc_ptr {
  public:
   _Tp *get() const noexcept {
@@ -150,12 +171,8 @@ class gc_ptr {
   gc_ptr(std::nullptr_t) : _M_t(nullptr) {}
   explicit gc_ptr(GcReference gcReference) : _M_t(gcReference) {}
   gc_ptr(const gc_ptr &ptr) : _M_t(ptr.getGcReference()) {}
-  template<typename _Up, typename = std::_Require<__safe_conversion_up<_Up>>>
-  gc_ptr(const gc_ptr<_Up> &ptr) : _M_t(ptr.getGcReference()) {}
-  template<typename _Up, typename = std::_Require<__safe_conversion_up<_Up>>>
-  gc_ptr(gc_ptr &&ptr) : _M_t(ptr.getGcReference()) {
-    ptr = nullptr;
-  }
+  template<typename _Up, typename = std::_Require<__safe_conversion_up<_Up>>, bool _tr>
+  gc_ptr(const gc_ptr<_Up, _tr> &ptr) : _M_t(ptr.getGcReference()) {}
   gc_ptr &operator=(std::nullptr_t) noexcept {
     _M_t = nullptr;
     return *this;
@@ -169,15 +186,9 @@ class gc_ptr {
     ptr.getGcReference().update(nullptr);
     return *this;
   }
-  template<typename _Up, typename = std::_Require<__safe_conversion_up<_Up>>>
-  gc_ptr &operator=(const gc_ptr<_Up> &ptr) {
+  template<typename _Up, typename = std::_Require<__safe_conversion_up<_Up>>, bool _tr>
+  gc_ptr &operator=(const gc_ptr<_Up, _tr> &ptr) {
     _M_t = ptr.getGcReference();
-    return *this;
-  }
-  template<typename _Up, typename = std::_Require<__safe_conversion_up<_Up>>>
-  gc_ptr &operator=(gc_ptr<_Up> &&ptr) noexcept {
-    _M_t = ptr.getGcReference();
-    ptr.getGcReference().update(nullptr);
     return *this;
   }
   _Tp *operator->() const noexcept {
@@ -195,15 +206,19 @@ class gc_ptr {
   template<typename _Up>
   friend typename _MakeGc<_Up>::__array
   make_gc(size_t __num);
-  static std::atomic_bool mIndexing; // back to atomic for ThreadSanitizer check
-  __gc_ptr_impl<_Tp> _M_t;
-};
-template<typename _Tp>
-std::atomic_bool gc_ptr<_Tp>::mIndexing(false);
 
-template<typename _Tp>
-class gc_ptr<_Tp[]> {
+  __gc_ptr_impl<_Tp, root> _M_t;
+};
+
+template<typename _Tp, bool root>
+class gc_ptr<_Tp[], root> {
  public:
+  GcReference &getGcReference() {
+    return _M_t.getReference();
+  }
+  GcReference getGcReference() const {
+    return _M_t.getReference();
+  }
   template<typename _Up>
   using __safe_conversion_raw = std::__and_<
       std::__or_<std::is_same<_Up, _Tp[]>,
@@ -213,14 +228,10 @@ class gc_ptr<_Tp[]> {
       >
   >;
   template<typename _Up,
-      typename = std::_Require<__safe_conversion_raw<_Up>>>
-  gc_ptr(const gc_ptr<_Up> &__u) noexcept
-      : _M_t(__u.getGcReference()) {}
-  template<typename _Up,
-      typename = std::_Require<__safe_conversion_raw<_Up>>>
-  gc_ptr(gc_ptr<_Up> &&__u) noexcept
-      : _M_t(__u.getGcReference()) {}
+      typename = std::_Require<__safe_conversion_raw<_Up>>, bool _tr>
+  gc_ptr(const gc_ptr<_Up, _tr> &__u) noexcept: _M_t(__u.getGcReference()) {}
   gc_ptr() : _M_t() {}
+  explicit gc_ptr(GcReference gcReference) : _M_t(gcReference) {}
   gc_ptr(std::nullptr_t) : _M_t(nullptr) {}
   gc_ptr &operator=(std::nullptr_t) noexcept {
     _M_t.reset(nullptr);
@@ -234,41 +245,42 @@ class gc_ptr<_Tp[]> {
   template<typename _Up>
   friend typename _MakeGc<_Up>::__array
   make_gc(size_t __num);
-  explicit gc_ptr(GcReference gcReference) : _M_t(gcReference) {}
-  __gc_ptr_impl<_Tp> _M_t;
+  __gc_ptr_impl<_Tp, root> _M_t;
 };
 
-template<typename _Tp, typename _Up>
+template<typename _Tp>
+using gc_root = gc_ptr<_Tp, true>;
+
+template<typename _Tp, typename _Up, bool _sr, bool _tr>
 inline bool
-operator==(const gc_ptr<_Tp> &__x,
-           const gc_ptr<_Up> &__y) { return __x.get() == __y.get(); }
+operator==(const gc_ptr<_Tp, _sr> &__x,
+           const gc_ptr<_Up, _tr> &__y) { return __x.get() == __y.get(); }
+
+template<typename _Tp, bool _root>
+inline bool
+operator==(const gc_ptr<_Tp, _root> &__x, std::nullptr_t) noexcept { return !__x; }
+
+template<typename _Tp, bool _root>
+inline bool
+operator==(std::nullptr_t, const gc_ptr<_Tp, _root> &__x) noexcept { return !__x; }
+
+template<typename _Tp, typename _Up, bool _sr, bool _tr>
+inline bool
+operator!=(const gc_ptr<_Tp, _sr> &__x,
+           const gc_ptr<_Up, _tr> &__y) { return __x.get() != __y.get(); }
+
+template<typename _Tp, bool _root>
+inline bool
+operator!=(const gc_ptr<_Tp, _root> &__x, std::nullptr_t) noexcept { return (bool) __x; }
+
+template<typename _Tp, bool _root>
+inline bool
+operator!=(std::nullptr_t, const gc_ptr<_Tp, _root> &__x) noexcept { return (bool) __x; }
 
 template<typename _Tp>
-inline bool
-operator==(const gc_ptr<_Tp> &__x, std::nullptr_t) noexcept { return !__x; }
-
+struct _MakeGc { typedef gc_ptr<_Tp, false> __single_object; };
 template<typename _Tp>
-inline bool
-operator==(std::nullptr_t, const gc_ptr<_Tp> &__x) noexcept { return !__x; }
-
-template<typename _Tp,
-    typename _Up>
-inline bool
-operator!=(const gc_ptr<_Tp> &__x,
-           const gc_ptr<_Up> &__y) { return __x.get() != __y.get(); }
-
-template<typename _Tp>
-inline bool
-operator!=(const gc_ptr<_Tp> &__x, std::nullptr_t) noexcept { return (bool) __x; }
-
-template<typename _Tp>
-inline bool
-operator!=(std::nullptr_t, const gc_ptr<_Tp> &__x) noexcept { return (bool) __x; }
-
-template<typename _Tp>
-struct _MakeGc { typedef gc_ptr<_Tp> __single_object; };
-template<typename _Tp>
-struct _MakeGc<_Tp[]> { typedef gc_ptr<_Tp[]> __array; };
+struct _MakeGc<_Tp[]> { typedef gc_ptr<_Tp[], false> __array; };
 template<typename _Tp, size_t _Bound>
 struct _MakeGc<_Tp[_Bound]> { struct __invalid_type {}; };
 template<typename _Tp, typename... _Args>
@@ -281,7 +293,7 @@ make_gc(_Args &&... __args) {
   GcReference reference;
   reference.gcAllocate(typeId);
   void *ptr = reference.getReference();
-  bool shouldIndex = !completed && !gc_ptr<_Tp>::mIndexing.exchange(true);
+  bool shouldIndex = !completed && !_TypeIndexing<_Tp>::mIndexing.exchange(true);
   if (shouldIndex) {
     _AddressBase::push(ptr);
   }
@@ -297,7 +309,7 @@ make_gc(_Args &&... __args) {
     _TypeRegister<_Tp>::registerType(std::move(offsets), true);
     _AddressBase::pop();
   }
-  return gc_ptr<_Tp>(reference);
+  return gc_ptr<_Tp, false>(reference);
 }
 template<typename _Tp>
 typename _MakeGc<_Tp>::__array
@@ -309,7 +321,7 @@ make_gc(size_t __num) {
   GcReference reference;
   reference.gcAllocate(typeId, __num);
   void *ptr = reference.getReference();
-  bool shouldIndex = !completed && !gc_ptr<ElementType>::mIndexing.exchange(true);
+  bool shouldIndex = !completed && !_TypeIndexing<ElementType>::mIndexing.exchange(true);
   if (shouldIndex) {
     _AddressBase::push(ptr);
   }
@@ -326,7 +338,7 @@ make_gc(size_t __num) {
     _AddressBase::pop();
   }
   new((ElementType *) ptr + 1) ElementType[__num - 1];
-  gc_ptr<_Tp> p(reference);
+  gc_ptr<_Tp, false> p(reference);
   return p;
 }
 template<typename _Tp, typename... _Args>

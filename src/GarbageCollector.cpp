@@ -173,8 +173,15 @@ void mygc::GarbageCollector::collectSTW() {
   }
   mOldGeneration.onScanEnd();
   mLargeObjects.onScanEnd();
-  mYoungPool.putDirtyGeneration(std::move(tYoung));
-  tYoung = mYoungPool.getCleanGeneration();
+  if (tYoung) {
+    if (tYoung->getFinalizerList().getHead()) {
+      mYoungPool.putDirtyGeneration(std::move(tYoung));
+      tYoung = mYoungPool.getCleanGeneration();
+    } else {
+      tYoung->reset();
+    }
+  }
+
 //  GCLOG("collecting finished");
 }
 bool mygc::GarbageCollector::inHeap(void *ptr) {

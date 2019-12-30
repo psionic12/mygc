@@ -52,7 +52,7 @@ TEST_F(PtrMemberTest, correctnessTest) {
 
 
 TEST_F(PtrMemberTest, arrayModifyTest) {
-  mygc::gc_ptr<int[]> array = mygc::make_gc<int[]>(5);
+  mygc::gc_root<int[]> array = mygc::make_gc<int[]>(5);
   for (int i = 0; i < 5; i++) {
     array[i] = i;
   }
@@ -79,7 +79,7 @@ TEST_F(PtrMemberTest, arrayModifyTest) {
 
 
 TEST_F(PtrMemberTest, singleModifyTest) {
-  mygc::gc_ptr<int> ptr = mygc::make_gc<int>(1);
+  mygc::gc_root<int> ptr = mygc::make_gc<int>(1);
   ASSERT_EQ(*ptr, 1);
   auto ptr2 = ptr;
   ASSERT_EQ(ptr == ptr2, true);

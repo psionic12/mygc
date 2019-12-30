@@ -19,9 +19,9 @@ void worker() {
     std::unique_lock<std::mutex> lk(gMutex);
     gThreads.emplace(pthread_self());
   }
-  mygc::gc_ptr<int> p1;
-  mygc::gc_ptr<int> p2;
-  mygc::gc_ptr<int> p3;
+  mygc::gc_root<int> p1;
+  mygc::gc_root<int> p2;
+  mygc::gc_root<int> p3;
   while (true) {
     std::this_thread::sleep_for(std::chrono::seconds(1));
     {

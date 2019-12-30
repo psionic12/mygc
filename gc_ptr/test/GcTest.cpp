@@ -84,10 +84,11 @@ std::vector<int> Tester<TestId, Size>::createdIndex{};
 TEST_F(GCTest, singleTest) {
   typedef Tester<2, 128> Tester;
   Tester::reset(1);
-  auto ptr = make_gc<Tester>();
+  gc_root<Tester> ptr = make_gc<Tester>();
   Tester::assertAllCreated();
   Tester::assertAllAlive();
   GcReference::collect();
+  std::this_thread::sleep_for(std::chrono::seconds(3));
   Tester::assertAllAlive();
   ptr = nullptr;
   GcReference::collect();
@@ -98,8 +99,8 @@ TEST_F(GCTest, gcTest) {
   typedef Tester<3, 512> Tester;
   Tester::reset(70);
   std::thread thread2([]() {
-    gc_ptr<Tester> child;
-    gc_ptr<Tester> current;
+    gc_root<Tester> child;
+    gc_root<Tester> current;
     for (int i = 0; i < 10; i++) {
       current = make_gc<Tester>();
       current->mChild = child;
@@ -117,7 +118,7 @@ TEST_F(GCTest, gcTest) {
     GcReference::collect();
   });
   thread2.detach();
-  gc_ptr<Tester> t;
+  gc_root<Tester> t;
   for (int i = 0; i < 10; i++) {
     t = make_gc<Tester>();
     ASSERT_EQ(t->constructorCalled(), true);
@@ -141,7 +142,7 @@ TEST_F(GCTest, gcTest) {
 TEST_F(GCTest, arrayOldTest) {
   typedef Tester<4, 512> Tester;
   Tester::reset(5);
-  gc_ptr<Tester[]> ptr = make_gc<Tester[]>(5);
+  gc_root<Tester[]> ptr = make_gc<Tester[]>(5);
   Tester::assertAllCreated();
   Tester::assertAllAlive();
   GcReference::collect();
@@ -155,7 +156,9 @@ TEST_F(GCTest, arrayOldTest) {
 TEST_F(GCTest, arrayYoungTest) {
   typedef Tester<5, 512> Tester;
   Tester::reset(5);
-  gc_ptr<Tester[]> ptr = make_gc<Tester[]>(5);
+  gc_root<Tester[]> ptr = make_gc<Tester[]>(5);
+  GcReference::collect();
+  std::this_thread::sleep_for(std::chrono::seconds(3));
   Tester::assertAllCreated();
   Tester::assertAllAlive();
   ptr = nullptr;
@@ -166,9 +169,9 @@ TEST_F(GCTest, arrayYoungTest) {
 
 TEST_F(GCTest, gcLargeTest) {
   typedef Tester<6, 2 << 13> Tester;
-  Tester::reset(10);
+  Tester::reset(20);
   std::thread thread2([]() {
-    gc_ptr<Tester> t;
+    gc_root<Tester> t;
     for (int i = 0; i < 10; i++) {
       t = make_gc<Tester>();
       t->mChild = t;
@@ -177,7 +180,7 @@ TEST_F(GCTest, gcLargeTest) {
     GcReference::collect();
   });
   thread2.detach();
-  gc_ptr<Tester> t;
+  gc_root<Tester> t;
   for (int i = 0; i < 10; i++) {
     t = make_gc<Tester>();
     ASSERT_EQ(t->constructorCalled(), true);
