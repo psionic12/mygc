@@ -51,9 +51,3 @@ define the maximum size gc can use.
 
 ## Can I use this in other languages?
 Yes. mygc is seprated by two parts: the core gc library and a wrapper header for C++, but you have to write you own wrapper.
-
-## TODO
-
-1. Illustrate the details of the core gc library and the C++ wrapper
-2. Find a dark magic(if exist) to make the `gc_ptr` has destructor but make the `std::is_trivially_destructible<gc_ptr>` return true.
-3. Or distinguish gc roots with other normal references.
