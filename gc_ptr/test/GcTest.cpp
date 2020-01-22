@@ -191,3 +191,23 @@ TEST_F(GCTest, gcLargeTest) {
   Tester::assertAllCreated();
   Tester::assertAllDead();
 }
+
+TEST_F(GCTest, loopTest) {
+  typedef Tester<7, 1> Tester;
+  Tester::reset(2);
+
+  gc_root<Tester> t1 = make_gc<Tester>();
+  gc_root<Tester> t2 = make_gc<Tester>();
+  t1->mChild = t2;
+  t2->mChild = t1;
+  Tester::assertAllCreated();
+  Tester::assertAllAlive();
+
+  t1 = nullptr;
+  t2 = nullptr;
+
+  GcReference::collect();
+  std::this_thread::sleep_for(std::chrono::seconds(3));
+  Tester::assertAllCreated();
+  Tester::assertAllDead();
+}
